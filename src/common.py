@@ -38,20 +38,20 @@ def get_config(args: argparse.Namespace) -> tuple[str, configparser.ConfigParser
 
 
 def get_default_ini_path() -> str:
-    return os.path.join(os.getcwd(), 'config.ini')
+    return os.path.join(os.getcwd(), "config.ini")
 
 
 def make_config(config_file: str) -> None:
     config = configparser.ConfigParser()
+    config["AoU"] = {"endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite"}
     config["Logon"] = {
         "aou_service_account": r"awardee-california@all-of-us-ops-data-api-prod.iam.gservice"
-                               r"account.com",
+        r"account.com",
         "pmi_account": "my.name@pmi-ops.org",
         "project": "all-of-us-ops-data-api-prod",
         "token_file": r"C:\data\aou_submission\key.json",
     }
     config["Logs"] = {"log_directory": r"C:\logs"}
-
 
     with open(config_file, "w") as configfile:
         config.write(configfile)
