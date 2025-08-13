@@ -1,0 +1,57 @@
+import argparse
+import configparser
+import os
+import sys
+from collections.abc import Callable
+from typing import Union
+
+
+def get_args(local_args: Callable) -> argparse.Namespace:
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c",
+        "--config",
+        help="read config from this file",
+        default=get_default_ini_path(),
+    )
+    local_args(parser)
+    args: argparse.Namespace = parser.parse_args()
+    return args
+
+
+def get_config(args: argparse.Namespace) -> tuple[str, configparser.ConfigParser]:
+    config_file: str = get_default_ini_path()
+
+    if not os.path.isfile(config_file):
+        print("Error: the config file doesn't exist, creating it with default values.")
+        print("Check the contents and re-run.")
+        print()
+        make_config(config_file)
+        print("The new settings file is located at {0}".format(config_file))
+        sys.exit(-1)
+
+    config = configparser.ConfigParser(
+        interpolation=configparser.ExtendedInterpolation()
+    )
+    config.read(config_file)
+    return config_file, config
+
+
+def get_default_ini_path() -> str:
+    return os.path.join(os.getcwd(), 'config.ini')
+
+
+def make_config(config_file: str) -> None:
+    config = configparser.ConfigParser()
+    config["Logon"] = {
+        "aou_service_account": r"awardee-california@all-of-us-ops-data-api-prod.iam.gservice"
+                               r"account.com",
+        "pmi_account": "my.name@pmi-ops.org",
+        "project": "all-of-us-ops-data-api-prod",
+        "token_file": r"C:\data\aou_submission\key.json",
+    }
+    config["Logs"] = {"log_directory": r"C:\logs"}
+
+
+    with open(config_file, "w") as configfile:
+        config.write(configfile)
