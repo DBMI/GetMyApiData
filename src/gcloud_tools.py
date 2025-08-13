@@ -1,9 +1,10 @@
+import logging
 import os
 import time
 from pathlib import Path
-import logging
-from my_logging import setup_logging
+
 from mock_ipython import getoutput, system
+from my_logging import setup_logging
 
 
 class GCloudTools:
@@ -95,9 +96,7 @@ class GCloudTools:
 
         self.__log.info("Authorizing...")
 
-        command: str = (
-            f"gcloud -q auth application-default login --impersonate-service-account {self.__service_account}"
-        )
+        command: str = f"gcloud -q auth application-default login --impersonate-service-account {self.__service_account}"
         results_list: list = getoutput(command)
 
         if not results_list or len(results_list) < 6:
