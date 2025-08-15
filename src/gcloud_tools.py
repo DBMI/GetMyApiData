@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 from mock_ipython import getoutput, system
@@ -27,6 +28,7 @@ class GCloudTools:
         aou_service_account: str,
         token_file: str,
         log_directory: str,
+        status_fn: Callable = None,
     ):
         """
         Create instance of GCloudTools class.
@@ -39,7 +41,7 @@ class GCloudTools:
         aou_service_account : str   pmi service account
         token_file : str            full path to token file
         log_directory : str         log directory
-
+        status_fn : callable        Optional external fn to report status
         Return
         ------
         none; Instantiates object
@@ -55,6 +57,7 @@ class GCloudTools:
         self.__project: str = project
         self.__service_account: str = aou_service_account
         self.__token_file: str = token_file
+        self.__status_fn: Callable = status_fn
 
         # Ensure the path to the token file exists.
         file_path: Path = Path(self.__token_file)
@@ -78,8 +81,10 @@ class GCloudTools:
         -------
         none
         """
-
-        self.__log.info("Activating the service account...")
+        if self.__status_fn is not None:
+            self.__status_fn("Activating the service account...")
+        else:
+            self.__log.info("Activating the service account...")
 
         system(
             f"gcloud -q auth activate-service-account --key-file={self.__token_file}"
@@ -94,18 +99,26 @@ class GCloudTools:
         results: str        Result of 'gcloud auth login' command.
         """
 
-        self.__log.info("Authorizing...")
+        if self.__status_fn is not None:
+            self.__status_fn("Authorizing via GCloud...")
+        else:
+            self.__log.info("Authorizing via GCloud...")
 
         command: str = f"gcloud -q auth application-default login --impersonate-service-account {self.__service_account}"
         results_list: list = getoutput(command)
 
         if not results_list or len(results_list) < 6:
-            self.__log.exception(f"Unable to login.")
-            raise RuntimeError(f"Unable to login.")
+            if self.__status_fn is not None:
+                self.__status_fn("Unable to login...")
+
+            self.__log.exception("Unable to login.")
+            raise RuntimeError("Unable to login.")
 
         results: str = results_list[5]
 
         if not results.startswith("Credentials saved"):
+            if self.__status_fn is not None:
+                self.__status_fn(f"Unable to login: {results}")
             self.__log.exception(f"Unable to login: {results}")
             raise RuntimeError(f"Unable to login: {results}")
 
@@ -118,7 +131,10 @@ class GCloudTools:
         results: str        Result of 'gcloud keys create' command.
         """
 
-        self.__log.info("Creating key file...")
+        if self.__status_fn is not None:
+            self.__status_fn("Creating key file...")
+        else:
+            self.__log.info("Creating key file...")
 
         command: str = (
             f"gcloud -q iam service-accounts keys create --account {self.__pmi_account} --project {self.__project} --iam-account {self.__service_account} "
@@ -128,6 +144,9 @@ class GCloudTools:
         results: str = results_list[0]
 
         if not results.startswith("created key"):
+            if self.__status_fn is not None:
+                self.__status_fn(f"Unable to create key file: {results}")
+
             self.__log.exception(f"Unable to create key file: {results}")
             raise RuntimeError(f"Unable to create key file: {results}")
 
@@ -139,16 +158,26 @@ class GCloudTools:
         -------
         token: str
         """
-        self.__log.info("Reading key file.")
+        if self.__status_fn is not None:
+            self.__status_fn("Reading key file...")
+        else:
+            self.__log.info("Reading key file...")
+
         token: list = getoutput("gcloud -q auth print-access-token")
 
         if token:
             token_payload: str = token[0]
 
             if not token_payload.startswith("ya"):
+                if self.__status_fn is not None:
+                    self.__status_fn(f"Authentication Token Error: {token_payload}")
+
                 self.__log.exception(f"Authentication Token Error: {token_payload}")
                 raise RuntimeError(f"Authentication Token Error: {token_payload}")
         else:
+            if self.__status_fn is not None:
+                self.__status_fn("Unable to retrieve token.")
+
             self.__log.exception("Unable to retrieve token.")
             raise RuntimeError("Unable to retrieve token.")
 

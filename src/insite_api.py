@@ -1,7 +1,9 @@
 import csv
 import logging
+import math
 import os
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import List, Union
 
@@ -9,7 +11,7 @@ import requests
 
 from header_tools import join_headers, make_header
 from my_logging import setup_logging
-from paired_organizations import PairedOrganization
+from paired_organizations import PairedOrganization, PairedOrganizations
 
 
 class InSiteAPI(object):
@@ -20,7 +22,8 @@ class InSiteAPI(object):
     ----------
     self.__log
     self.__official_header
-
+    self.__progress_fn
+    self.__status_fn
 
     Methods
     ---------
@@ -28,7 +31,20 @@ class InSiteAPI(object):
     request_data()
     """
 
-    def __init__(self, log_directory: str):
+    def __init__(
+        self,
+        log_directory: str,
+        progress_fn: Callable = None,
+        status_fn: Callable = None,
+    ):
+        """Instantiate an InSiteAPI object.
+
+        Parameters
+        ----------
+        log_directory: str
+        progress_fn: Callable
+        status_fn: Callable
+        """
         # Logger
         self.__log: logging.Logger = setup_logging(
             log_filename=os.path.join(
@@ -40,11 +56,15 @@ class InSiteAPI(object):
         # Variables developed in request_list() to be used in output_data().
         self.__official_header: list = []
 
+        # We can use these to report to calling function how & what we're doing.
+        self.__progress_fn: Callable = progress_fn
+        self.__status_fn: Callable = status_fn
+
     def output_data(
         self,
         data_combined: dict,
         data_directory: str,
-        paired_organizations: List[PairedOrganization],
+        paired_organizations: PairedOrganizations,
     ) -> None:
         """
         Produces .csv files from extracted data.
@@ -55,7 +75,7 @@ class InSiteAPI(object):
                                                         'by organization'   Organized by organization name
                                                         'all'               Everything
         data_directory: str                             Where do you want the files to be created?
-        paired_organizations: List[PairedOrganization]
+        paired_organizations: PairedOrganizations
 
         Returns
         -------
@@ -85,24 +105,24 @@ class InSiteAPI(object):
         data_directory_path: Path = Path(data_directory)
         data_directory_path.mkdir(parents=True, exist_ok=True)
 
-        csv_export_headers = map_api_to_csv_export_headers(self.__official_header)
-
-        for po in paired_organizations:
+        for po in paired_organizations.organizations_list():
             csv_filepath = os.path.join(
-                data_directory, r"workqueue_" + po.organization + ".csv"
+                data_directory, r"workqueue_" + po.organization() + ".csv"
             )
             self.__log.info(f"Writing to {csv_filepath}")
+
+            if self.__status_fn is not None:
+                self.__status_fn(f"Writing to {csv_filepath}")
 
             with open(csv_filepath, "w", newline="", encoding="utf-8") as file:
                 writer: csv.writer = csv.writer(file)
                 writer.writerow(self.__official_header)
-                writer.writerow(csv_export_headers)
 
-                if po.marker not in data:
-                    self.__log.info("No data for " + po.marker)
+                if po.marker() not in data:
+                    self.__log.info("No data for " + po.marker())
                     continue
 
-                for d in data[po.marker]:
+                for d in data[po.marker()]:
                     line = []
 
                     for h in self.__official_header:
@@ -116,27 +136,30 @@ class InSiteAPI(object):
 
                     writer.writerow(line)
 
-        csv_filepath = os.path.join(data_directory, "everything.csv")
-        self.__log.info(f"Writing to {csv_filepath}")
+        if paired_organizations.all_allowed():
+            csv_filepath = os.path.join(data_directory, "everything.csv")
+            self.__log.info(f"Writing to {csv_filepath}")
 
-        with open(csv_filepath, "w", newline="", encoding="utf-8") as file:
-            writer: csv.writer = csv.writer(file)
-            writer.writerow(self.__official_header)
-            writer.writerow(csv_export_headers)
+            if self.__status_fn is not None:
+                self.__status_fn(f"Writing to {csv_filepath}")
 
-            for d in everything:
-                line = []
+            with open(csv_filepath, "w", newline="", encoding="utf-8") as file:
+                writer: csv.writer = csv.writer(file)
+                writer.writerow(self.__official_header)
 
-                for h in self.__official_header:
-                    try:
-                        if d[h] != "UNSET":
-                            line.append(d[h])
-                        else:
+                for d in everything:
+                    line = []
+
+                    for h in self.__official_header:
+                        try:
+                            if d[h] != "UNSET":
+                                line.append(d[h])
+                            else:
+                                line.append("")
+                        except KeyError:
                             line.append("")
-                    except KeyError:
-                        line.append("")
 
-                writer.writerow(line)
+                    writer.writerow(line)
 
     def request_data(
         self,
@@ -161,7 +184,7 @@ class InSiteAPI(object):
         -------
         data: dict                  Organized by organization name
         """
-        headers = {
+        headers: dict = {
             "content-type": "application/json",
             "Authorization": "Bearer {0}".format(token),
         }
@@ -171,8 +194,9 @@ class InSiteAPI(object):
 
         next_url: Union[
             str, None
-        ] = f"{endpoint}?_sort=lastModified&_count={num_rows_per_page}&awardee={awardee}"
+        ] = f"{endpoint}?_sort=lastModified&_includeTotal=TRUE&_count={num_rows_per_page}&awardee={awardee}"
         total_records: int = 0
+        total_available_records: int = 65000
 
         while next_url:
             if max_pages is not None:
@@ -223,11 +247,19 @@ class InSiteAPI(object):
             ):
                 self.__log.error("No bundle")
 
+            if "total" in ps_data:
+                total_available_records = ps_data["total"]
+
             num_new_records: int = len(ps_data["entry"])
             total_records += num_new_records
             self.__log.info(
                 f"Success: retrieved {num_new_records} records.  Total records: {total_records}"
             )
+
+            if self.__progress_fn is not None:
+                self.__progress_fn(
+                    math.trunc(100 * total_records / total_available_records)
+                )
 
             next_url = None
 

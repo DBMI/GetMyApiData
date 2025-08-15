@@ -43,7 +43,13 @@ def get_default_ini_path() -> str:
 
 def make_config(config_file: str) -> None:
     config = configparser.ConfigParser()
-    config["AoU"] = {"endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite"}
+    config["AoU"] = {
+        "awardee": "CAL_PMC",
+        "endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite",
+    }
+    config["InSite API"] = {
+        "data_directory": r"C:\data",
+    }
     config["Logon"] = {
         "aou_service_account": r"awardee-california@all-of-us-ops-data-api-prod.iam.gservice"
         r"account.com",
@@ -54,4 +60,9 @@ def make_config(config_file: str) -> None:
     config["Logs"] = {"log_directory": r"C:\logs"}
 
     with open(config_file, "w") as configfile:
+        config.write(configfile)
+
+
+def update_config(config: configparser.ConfigParser) -> None:
+    with open(get_default_ini_path(), "w") as configfile:
         config.write(configfile)

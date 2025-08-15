@@ -33,11 +33,11 @@ if __name__ == "__main__":
     # These normally show up as blanks for the 'organization' field.
 
     paired_organizations: List[PairedOrganization] = [
-        PairedOrganization(_organization="UCSD", _marker="CAL_PMC_UCSD"),
-        PairedOrganization(_organization="SDBB", _marker="CAL_PMC_SDBB"),
-        PairedOrganization(_organization="UCSF", _marker="CAL_PMC_UCSF"),
-        PairedOrganization(_organization="UCD", _marker="CAL_PMC_UCD"),
-        PairedOrganization(_organization="Unpaired", _marker=unpaired_empty_marker),
+        PairedOrganization(organization="UCSD", marker="CAL_PMC_UCSD"),
+        PairedOrganization(organization="SDBB", marker="CAL_PMC_SDBB"),
+        PairedOrganization(organization="UCSF", marker="CAL_PMC_UCSF"),
+        PairedOrganization(organization="UCD", marker="CAL_PMC_UCD"),
+        PairedOrganization(organization="Unpaired", marker=unpaired_empty_marker),
     ]
 
     app: wx.App = wx.App(redirect=False)
