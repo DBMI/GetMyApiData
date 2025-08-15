@@ -331,7 +331,9 @@ class ApiGui(wx.Dialog):
         self.__enable_if_inputs_complete()
 
     def __on_cancel_clicked(self, event) -> None:
-        self.EndModal(wx.ID_CANCEL)
+        #self.EndModal(wx.ID_CANCEL)
+        self.Destroy()
+        event.Skip()
 
     def __on_ok_clicked(self, event) -> None:
         self.__ok_button.Disable()
