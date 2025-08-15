@@ -7,12 +7,12 @@ from typing import List
 
 import wx
 
-import common
-from convert_to_hp_format import HealthProConverter
-from gcloud_tools import GCloudTools
-from insite_api import InSiteAPI
-from my_logging import setup_logging
-from paired_organizations import PairedOrganization, PairedOrganizations
+from src.common import get_args, get_config, update_config
+from src.convert_to_hp_format import HealthProConverter
+from src.gcloud_tools import GCloudTools
+from src.insite_api import InSiteAPI
+from src.my_logging import setup_logging
+from src.paired_organizations import PairedOrganization, PairedOrganizations
 
 
 class ApiGui(wx.Dialog):
@@ -294,7 +294,7 @@ class ApiGui(wx.Dialog):
 
         if directory_path:
             self.__config["InSite API"]["data_directory"] = directory_path
-            common.update_config(config=self.__config)
+            update_config(config=self.__config)
 
         return directory_path
 
@@ -341,7 +341,7 @@ class ApiGui(wx.Dialog):
         self.__config["Logon"]["pmi_account"] = self.__pmi_account
         self.__config["Logon"]["project"] = self.__project
         self.__config["Logon"]["token_file"] = self.__token_file
-        common.update_config(config=self.__config)
+        update_config(config=self.__config)
 
         self.__get_data()
         self.__ok_button.Enable()
@@ -394,14 +394,21 @@ def get_local_args(parser: argparse.ArgumentParser) -> None:
 
 
 if __name__ == "__main__":
-    args: argparse.Namespace = common.get_args(get_local_args)
-    config_file, myconfig = common.get_config(args)
-
-    app: wx.App = wx.App(redirect=False)
+    log: logging.Logger = setup_logging(
+        log_filename=os.path.join(os.getcwd(), "api_gui.log")
+    )
+    log.info("Getting arguments.")
+    args: argparse.Namespace = get_args(get_local_args)
+    log.info("Getting config.")
+    config_file, myconfig = get_config(args)
 
     # Override the config file.
     myconfig["AoU"]["organization"] = "UCD"
 
+    log.info("Instantiating wxPython app.")
+    app: wx.App = wx.App(redirect=False)
+
     # Call the GUI.
+    log.info("Instantiating ApiGui object.")
     gui: ApiGui = ApiGui(myconfig)
     app.MainLoop()
