@@ -23,12 +23,7 @@ def get_config(args: argparse.Namespace) -> tuple[str, configparser.ConfigParser
     config_file: str = get_default_ini_path()
 
     if not os.path.isfile(config_file):
-        print("Error: the config file doesn't exist, creating it with default values.")
-        print("Check the contents and re-run.")
-        print()
         make_config(config_file)
-        print("The new settings file is located at {0}".format(config_file))
-        sys.exit(-1)
 
     config = configparser.ConfigParser(
         interpolation=configparser.ExtendedInterpolation()
@@ -57,7 +52,7 @@ def make_config(config_file: str) -> None:
         "project": "all-of-us-ops-data-api-prod",
         "token_file": r"C:\data\aou_submission\key.json",
     }
-    config["Logs"] = {"log_directory": r"C:\logs"}
+    config["Logs"] = {"log_directory": os.getcwd()}
 
     with open(config_file, "w") as configfile:
         config.write(configfile)
