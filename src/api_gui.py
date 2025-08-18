@@ -1,18 +1,22 @@
 import argparse
 import logging
 import os
+import sys
 from configparser import ConfigParser
 from tkinter import filedialog
 from typing import List
 
 import wx
+import wx.adv
 
-from src.common import get_args, get_config, update_config
+from src.common import (get_args, get_base_path, get_config, get_exe_version,
+                        update_config)
 from src.convert_to_hp_format import HealthProConverter
-from src.gcloud_tools import GCloudTools
+from src.gcloud_tools import GCloudTools, gcloud_tools_installed
 from src.insite_api import InSiteAPI
 from src.my_logging import setup_logging
 from src.paired_organizations import PairedOrganization, PairedOrganizations
+from src.splash import MySplashScreen
 
 
 class ApiGui(wx.Dialog):
@@ -50,16 +54,18 @@ class ApiGui(wx.Dialog):
         grid: wx.GridBagSizer = wx.GridBagSizer(hgap=5, vgap=5)
 
         # Title
-        font: wx.Font = wx.Font(
+        title_font: wx.Font = wx.Font(
             18,
             family=wx.FONTFAMILY_ROMAN,
             style=wx.FONTSTYLE_NORMAL,
             weight=wx.FONTWEIGHT_BOLD,
         )
         title_text: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="Get Awardee InSite API data"
+            my_panel,
+            id=wx.ID_ANY,
+            label="Get Awardee InSite API data: " + config["AoU"]["organization"],
         )
-        title_text.SetFont(font)
+        title_text.SetFont(title_font)
         grid.Add(
             title_text,
             pos=(0, 0),
@@ -172,34 +178,45 @@ class ApiGui(wx.Dialog):
             wx.EVT_BUTTON, self.__on_restore_token_file_button_clicked
         )
 
-        # PROGRESS BAR
-        self.__gauge = wx.Gauge(my_panel, range=100, size=wx.Size(350, 25))
-        grid.Add(
-            self.__gauge,
-            pos=(5, 0),
-            span=(1, 2),
-            flag=wx.ALIGN_CENTER | wx.TOP,
-            border=5,
-        )
+        # CHECK THAT GCLOUD TOOLS ARE INSTALLED.
+        if gcloud_tools_installed():
 
-        # STATUS BOX
-        self.__status_text: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="Ready"
-        )
-        grid.Add(
-            self.__status_text,
-            pos=(6, 0),
-            span=(1, 2),
-            flag=wx.EXPAND | wx.ALL,
-            border=5,
-        )
+            # PROGRESS BAR
+            self.__gauge = wx.Gauge(my_panel, range=100, size=wx.Size(350, 25))
+            grid.Add(
+                self.__gauge,
+                pos=(5, 0),
+                span=(1, 2),
+                flag=wx.ALIGN_CENTER | wx.TOP,
+                border=5,
+            )
 
-        # OK BUTTON
-        self.__ok_button: wx.Button = wx.Button(
-            my_panel, id=wx.ID_ANY, label="Request Data", style=wx.BORDER_SUNKEN
-        )
-        grid.Add(self.__ok_button, pos=(7, 0), flag=wx.ALL, border=5)
-        self.__ok_button.Bind(wx.EVT_BUTTON, self.__on_ok_clicked)
+            # STATUS BOX
+            self.__status_text: wx.StaticText = wx.StaticText(
+                my_panel, id=wx.ID_ANY, label="Ready"
+            )
+            grid.Add(
+                self.__status_text,
+                pos=(6, 0),
+                span=(1, 2),
+                flag=wx.EXPAND | wx.ALL,
+                border=5,
+            )
+
+            # OK BUTTON
+            self.__ok_button: wx.Button = wx.Button(
+                my_panel, id=wx.ID_ANY, label="Request Data", style=wx.BORDER_SUNKEN
+            )
+            grid.Add(self.__ok_button, pos=(7, 0), flag=wx.ALL, border=5)
+            self.__ok_button.Bind(wx.EVT_BUTTON, self.__on_ok_clicked)
+        else:
+            link_label = "Must first install GCloud tools"
+            link_url = "https://cloud.google.com/sdk/docs/install"
+            hyperlink = wx.adv.HyperlinkCtrl(my_panel, -1, link_label, link_url)
+
+            grid.Add(
+                hyperlink, pos=(6, 0), span=(1, 2), flag=wx.EXPAND | wx.ALL, border=5
+            )
 
         # CANCEL BUTTON
         cancel_button: wx.Button = wx.Button(
@@ -207,6 +224,19 @@ class ApiGui(wx.Dialog):
         )
         grid.Add(cancel_button, pos=(7, 1), flag=wx.ALL, border=5)
         cancel_button.Bind(wx.EVT_BUTTON, self.__on_cancel_clicked)
+
+        # VERSION INFO
+        footnote_font: wx.Font = wx.Font(
+            10,
+            family=wx.FONTFAMILY_ROMAN,
+            style=wx.FONTSTYLE_ITALIC,
+            weight=wx.FONTWEIGHT_NORMAL,
+        )
+        version_text: wx.StaticText = wx.StaticText(
+            my_panel, id=wx.ID_ANY, label="Version: " + get_exe_version()
+        )
+        version_text.SetFont(footnote_font)
+        grid.Add(version_text, pos=(7, 2), flag=wx.ALIGN_LEFT, border=5)
 
         # Connect grid sizer to panel.
         my_panel.SetSizerAndFit(grid)
@@ -331,7 +361,7 @@ class ApiGui(wx.Dialog):
         self.__enable_if_inputs_complete()
 
     def __on_cancel_clicked(self, event) -> None:
-        #self.EndModal(wx.ID_CANCEL)
+        # self.EndModal(wx.ID_CANCEL)
         self.Destroy()
         event.Skip()
 
@@ -396,21 +426,39 @@ def get_local_args(parser: argparse.ArgumentParser) -> None:
 
 
 if __name__ == "__main__":
+    # Display splash screen.
+    app: wx.App = wx.App(redirect=False)
+    splash = MySplashScreen(
+        os.path.join(get_base_path(), "UCSD_school_of_medicine.png")
+    )
+    splash.Show()
+    app.Yield()
+
     log: logging.Logger = setup_logging(
         log_filename=os.path.join(os.getcwd(), "api_gui.log")
     )
+
     log.info("Getting arguments.")
     args: argparse.Namespace = get_args(get_local_args)
     log.info("Getting config.")
-    config_file, myconfig = get_config(args)
+    myconfig = get_config(args)
 
-    # Override the config file.
-    myconfig["AoU"]["organization"] = "UCD"
+    # What campus is this?
+    org_filename: str = os.path.join(get_base_path(), "organization.txt")
 
-    log.info("Instantiating wxPython app.")
-    app: wx.App = wx.App(redirect=False)
+    if os.path.isfile(org_filename):
+        with open(org_filename, "r") as f:
+            myconfig["AoU"]["organization"] = f.read()
+    else:
+        myconfig["AoU"]["organization"] = "NOT READ"
 
-    # Call the GUI.
+    # Create the GUI.
     log.info("Instantiating ApiGui object.")
     gui: ApiGui = ApiGui(myconfig)
+
+    try:
+        splash.Destroy()
+    except RuntimeError:
+        pass
+
     app.MainLoop()

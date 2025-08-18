@@ -5,6 +5,9 @@ from typing import Union
 from paired_organizations import PairedOrganization as PairedOrganization
 from paired_organizations import PairedOrganizations
 
+def join_headers(h1: list, h2: list) -> list: ...
+def make_header(dict1: dict) -> list: ...
+
 class InSiteAPI:
     def __init__(
         self, log_directory: str, progress_fn: Callable = ..., status_fn: Callable = ...
