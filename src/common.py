@@ -3,7 +3,8 @@ import configparser
 import os
 import sys
 from collections.abc import Callable
-from typing import Union
+
+import win32api
 
 
 def get_args(local_args: Callable) -> argparse.Namespace:
@@ -19,7 +20,18 @@ def get_args(local_args: Callable) -> argparse.Namespace:
     return args
 
 
-def get_config(args: argparse.Namespace) -> tuple[str, configparser.ConfigParser]:
+def get_base_path() -> str:
+    base_path: str
+
+    if getattr(sys, "frozen", True) and hasattr(sys, "_MEIPASS"):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    return base_path
+
+
+def get_config(args: argparse.Namespace) -> configparser.ConfigParser:
     config_file: str = get_default_ini_path()
 
     if not os.path.isfile(config_file):
@@ -29,11 +41,48 @@ def get_config(args: argparse.Namespace) -> tuple[str, configparser.ConfigParser
         interpolation=configparser.ExtendedInterpolation()
     )
     config.read(config_file)
-    return config_file, config
+    return config
 
 
 def get_default_ini_path() -> str:
     return os.path.join(os.getcwd(), "config.ini")
+
+
+def get_exe_path() -> str:
+    exe_path: str
+
+    if getattr(sys, "frozen", True) and hasattr(sys, "_MEIPASS"):
+        exe_path = sys.executable
+    else:
+        exe_path = os.path.abspath(__file__)
+
+    return exe_path
+
+
+def get_exe_version() -> str:
+    exe_path: str = get_exe_path()
+
+    try:
+        # Get the full path to the executable
+        full_path = os.path.abspath(exe_path)
+
+        # Get the file version information
+        info = win32api.GetFileVersionInfo(full_path, "\\")
+
+        # Extract the major, minor, build, and private parts of the version
+        ms = info["FileVersionMS"]
+        ls = info["FileVersionLS"]
+
+        version = "%d.%d.%d.%d" % (
+            win32api.HIWORD(ms),
+            win32api.LOWORD(ms),
+            win32api.HIWORD(ls),
+            win32api.LOWORD(ls),
+        )
+        return version
+    except Exception as e:
+        print(f"Error getting version for {exe_path}: {e}")
+        return ""
 
 
 def make_config(config_file: str) -> None:

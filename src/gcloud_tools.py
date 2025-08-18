@@ -1,11 +1,48 @@
 import logging
 import os
+import subprocess
 import time
 from collections.abc import Callable
 from pathlib import Path
 
-from mock_ipython import getoutput, system
 from my_logging import setup_logging
+
+
+def gcloud_tools_installed() -> bool:
+    installed: bool = False
+
+    try:
+        # Execute the command and display output directly to console
+        subprocess.run("gcloud version", shell=True, check=True)
+        installed: bool = True
+    except subprocess.CalledProcessError as e:
+        print("Gcloud command-line tools are not installed.")
+
+    return installed
+
+
+def getoutput(command) -> list[str]:
+    """Execute a shell command and return the output as a list of strings."""
+    try:
+        # Execute the command, capture the output
+        output = subprocess.check_output(
+            command, shell=True, stderr=subprocess.STDOUT, text=True
+        )
+        # Split the output into lines and return as a list
+        return output.strip().split("\n")
+    except subprocess.CalledProcessError as e:
+        # Return error output if command execution fails
+        return e.output.strip().split("\n")
+
+
+def system(command) -> None:
+    """Execute a shell command, displaying the output directly to the console."""
+    try:
+        # Execute the command and display output directly to console
+        subprocess.run(command, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        # Print error message if command execution fails
+        print(f"Command failed with return code {e.returncode}")
 
 
 class GCloudTools:
@@ -35,7 +72,6 @@ class GCloudTools:
 
         Parameters
         ----------
-        log: logging.Logger         logging object
         pmi_account : str           pmi account of user
         project : str               project name
         aou_service_account : str   pmi service account
