@@ -86,22 +86,23 @@ def get_exe_version() -> str:
 
 
 def make_config(config_file: str) -> None:
-    config = configparser.ConfigParser()
+    cwd: str = os.getcwd()
+    config: configparser.ConfigParser = configparser.ConfigParser()
     config["AoU"] = {
         "awardee": "CAL_PMC",
         "endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite",
     }
     config["InSite API"] = {
-        "data_directory": r"C:\data",
+        "data_directory": cwd,
     }
     config["Logon"] = {
         "aou_service_account": r"awardee-california@all-of-us-ops-data-api-prod.iam.gservice"
         r"account.com",
         "pmi_account": "my.name@pmi-ops.org",
         "project": "all-of-us-ops-data-api-prod",
-        "token_file": r"C:\data\aou_submission\key.json",
+        "token_file": os.path.join(cwd, "key.json"),
     }
-    config["Logs"] = {"log_directory": os.getcwd()}
+    config["Logs"] = {"log_directory": cwd}
 
     with open(config_file, "w") as configfile:
         config.write(configfile)
