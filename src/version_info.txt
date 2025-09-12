@@ -35,8 +35,8 @@ VSVersionInfo(
         StringStruct('FileVersion', '0.1'),
         StringStruct('InternalName', 'insite api gui'),
         StringStruct('LegalCopyright', 'Copyleft 2025 by University of California'),
-        StringStruct('OriginalFilename', 'ucsf_gui.exe'),
-        StringStruct('ProductName', 'InSite API GUI for UCSF'),
+        StringStruct('OriginalFilename', 'getmyapidata_gui.exe'),
+        StringStruct('ProductName', 'InSite API GUI'),
         StringStruct('ProductVersion', '0.1')])
       ])
   ]

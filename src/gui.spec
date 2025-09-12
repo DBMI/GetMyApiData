@@ -5,7 +5,7 @@ a = Analysis(
     ['api_gui.py'],
     pathex=[],
     binaries=[],
-    datas=[('ucd/organization.txt', '.'),
+    datas=[('school_of_medicine.ico', '.'),
            ('UCSD_school_of_medicine.png', '.')],
     hiddenimports=[],
     hookspath=[],
@@ -23,7 +23,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='ucd_gui',
+    name='GetMyApiData',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -37,5 +37,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['school_of_medicine.ico'],
-    version='ucd_file_version_info.txt'
+    version='version_info.txt'
 )

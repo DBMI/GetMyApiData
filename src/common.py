@@ -1,10 +1,12 @@
 import argparse
 import configparser
 import os
+import re
 import sys
 from collections.abc import Callable
 
 import win32api
+from win32api import GetFileVersionInfo
 
 
 def get_args(local_args: Callable) -> argparse.Namespace:
@@ -45,7 +47,7 @@ def get_config(args: argparse.Namespace) -> configparser.ConfigParser:
 
 
 def get_default_ini_path() -> str:
-    return os.path.join(os.getcwd(), "config.ini")
+    return os.path.join(os.getcwd(), "src", "config.ini")
 
 
 def get_exe_path() -> str:
@@ -81,6 +83,12 @@ def get_exe_version() -> str:
         )
         return version
     except Exception as e:
+
+        ver_from_file: str = parse_version_file()
+
+        if ver_from_file:
+            return ver_from_file
+
         print(f"Error getting version for {exe_path}: {e}")
         return ""
 
@@ -107,6 +115,19 @@ def make_config(config_file: str) -> None:
     with open(config_file, "w") as configfile:
         config.write(configfile)
 
+
+def parse_version_file() -> str:
+    file_path: str = os.path.join(os.getcwd(), 'src', 'version_info.txt')
+
+    with open(file_path, 'r', encoding="utf-8") as version_file:
+        file_content = version_file.read()
+        pattern: str = "ProductVersion',\s'(?P<version>\d+\.\d+)"
+        match = re.search(pattern, file_content)
+
+        if match:
+            return match.group("version")
+
+        return ""
 
 def update_config(config: configparser.ConfigParser) -> None:
     with open(get_default_ini_path(), "w") as configfile:

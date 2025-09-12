@@ -248,6 +248,7 @@ class ApiGui(wx.Dialog):
         self.Fit()
         self.ShowModal()
 
+
     def __enable_if_inputs_complete(self) -> None:
         if (
             self.__aou_service_account
@@ -442,15 +443,6 @@ if __name__ == "__main__":
     args: argparse.Namespace = get_args(get_local_args)
     log.info("Getting config.")
     myconfig = get_config(args)
-
-    # What campus is this?
-    org_filename: str = os.path.join(get_base_path(), "organization.txt")
-
-    if os.path.isfile(org_filename):
-        with open(org_filename, "r") as f:
-            myconfig["AoU"]["organization"] = f.read()
-    else:
-        myconfig["AoU"]["organization"] = "NOT READ"
 
     # Create the GUI.
     log.info("Instantiating ApiGui object.")
