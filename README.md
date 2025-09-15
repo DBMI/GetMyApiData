@@ -6,7 +6,7 @@ A GUI tool for querying All of Us participant data using the InSite API.
 ### Installation
 
 1. Install `gcloud tools` from `https://cloud.google.com/sdk/docs/install`
-2. Get `getmyapidata-0.1.0-py3-none-any.whl` from GitHub.
+2. Get `getmyapidata-0.1.0-py3-none-any.whl` from [GitHub](https://github.com/DBMI/GetMyApiData/releases/tag/0.1).
 3. Install with `pip install getmyapidata-0.1.0-py3-none-any.whl`
 4. Run with `api_gui.py`
 
