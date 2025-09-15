@@ -6,7 +6,6 @@ import sys
 from collections.abc import Callable
 
 import win32api
-from win32api import GetFileVersionInfo
 
 
 def get_args(local_args: Callable) -> argparse.Namespace:
@@ -97,7 +96,7 @@ def make_config(config_file: str) -> None:
     cwd: str = os.getcwd()
     config: configparser.ConfigParser = configparser.ConfigParser()
     config["AoU"] = {
-        "awardee": "CAL_PMC",
+        "awardee": "<YourNameHere>",
         "endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite",
     }
     config["InSite API"] = {
@@ -117,9 +116,9 @@ def make_config(config_file: str) -> None:
 
 
 def parse_version_file() -> str:
-    file_path: str = os.path.join(os.getcwd(), 'src', 'version_info.txt')
+    file_path: str = os.path.join(os.getcwd(), "src", "version_info.txt")
 
-    with open(file_path, 'r', encoding="utf-8") as version_file:
+    with open(file_path, "r", encoding="utf-8") as version_file:
         file_content = version_file.read()
         pattern: str = "ProductVersion',\s'(?P<version>\d+\.\d+)"
         match = re.search(pattern, file_content)
@@ -128,6 +127,7 @@ def parse_version_file() -> str:
             return match.group("version")
 
         return ""
+
 
 def update_config(config: configparser.ConfigParser) -> None:
     with open(get_default_ini_path(), "w") as configfile:

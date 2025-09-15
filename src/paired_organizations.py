@@ -26,9 +26,9 @@ class PairedOrganizations:
     Wrapper for a list of PairedOrganization objects.
     """
 
-    def __init__(self, all: bool, list: List[PairedOrganization]) -> None:
-        self.__all: bool = all
-        self.__list: List[PairedOrganization] = list
+    def __init__(self, my_all: bool, my_list: List[PairedOrganization]) -> None:
+        self.__all: bool = my_all
+        self.__list: List[PairedOrganization] = my_list
 
     def all_allowed(self) -> bool:
         return self.__all

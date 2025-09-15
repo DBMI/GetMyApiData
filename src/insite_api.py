@@ -10,7 +10,6 @@ from typing import List, Union
 import requests
 
 from my_logging import setup_logging
-from paired_organizations import PairedOrganization, PairedOrganizations
 
 
 def join_headers(h1: list, h2: list) -> list:
@@ -83,44 +82,19 @@ class InSiteAPI(object):
         self.__progress_fn: Callable = progress_fn
         self.__status_fn: Callable = status_fn
 
-    def output_data(
-        self,
-        data_combined: dict,
-        data_directory: str,
-        paired_organizations: PairedOrganizations,
-    ) -> None:
+    def output_data(self, data: dict, data_directory: str) -> None:
         """
         Produces .csv files from extracted data.
 
         Parameters
         ----------
-        data_combined: dict                             Dict of dicts:
-                                                        'by organization'   Organized by organization name
-                                                        'all'               Everything
+        data: dict
         data_directory: str                             Where do you want the files to be created?
-        paired_organizations: PairedOrganizations
 
         Returns
         -------
         None
         """
-
-        # Separate the two dicts in 'data':
-        if "by organization" not in data_combined:
-            self.__log.error(
-                "Not finding 'by organization' in the 'data_combined' dict."
-            )
-            raise RuntimeError(
-                "Not finding 'by organization' in the 'data_combined' dict."
-            )
-
-        data: dict = data_combined["by organization"]
-
-        if "all" not in data_combined:
-            self.__log.error("Not finding 'all' in the 'data_combined' dict.")
-            raise RuntimeError("Not finding 'all' in the 'data_combined' dict.")
-
-        everything: dict = data_combined["all"]
 
         self.__official_header.sort()
 
@@ -128,9 +102,9 @@ class InSiteAPI(object):
         data_directory_path: Path = Path(data_directory)
         data_directory_path.mkdir(parents=True, exist_ok=True)
 
-        for po in paired_organizations.organizations_list():
+        for organization in data.keys():
             csv_filepath = os.path.join(
-                data_directory, r"workqueue_" + po.organization() + ".csv"
+                data_directory, organization + "_participant_list.csv"
             )
             self.__log.info(f"Writing to {csv_filepath}")
 
@@ -141,36 +115,7 @@ class InSiteAPI(object):
                 writer: csv.writer = csv.writer(file)
                 writer.writerow(self.__official_header)
 
-                if po.marker() not in data:
-                    self.__log.info("No data for " + po.marker())
-                    continue
-
-                for d in data[po.marker()]:
-                    line = []
-
-                    for h in self.__official_header:
-                        try:
-                            if d[h] != "UNSET":
-                                line.append(d[h])
-                            else:
-                                line.append("")
-                        except KeyError:
-                            line.append("")
-
-                    writer.writerow(line)
-
-        if paired_organizations.all_allowed():
-            csv_filepath = os.path.join(data_directory, "everything.csv")
-            self.__log.info(f"Writing to {csv_filepath}")
-
-            if self.__status_fn is not None:
-                self.__status_fn(f"Writing to {csv_filepath}")
-
-            with open(csv_filepath, "w", newline="", encoding="utf-8") as file:
-                writer: csv.writer = csv.writer(file)
-                writer.writerow(self.__official_header)
-
-                for d in everything:
+                for d in data[organization]:
                     line = []
 
                     for h in self.__official_header:
@@ -191,7 +136,7 @@ class InSiteAPI(object):
         token: str,
         max_pages: Union[int, None] = None,
         num_rows_per_page: Union[int, None] = 1000,
-    ) -> dict:
+    ) -> list:
         """
         Request list from AwardeeInSite API.
 
@@ -205,15 +150,14 @@ class InSiteAPI(object):
 
         Returns
         -------
-        data: dict                  Organized by organization name
+        data: dict by organization
         """
         headers: dict = {
             "content-type": "application/json",
             "Authorization": "Bearer {0}".format(token),
         }
 
-        data: dict = dict()
-        everything: list = []
+        data: dict = {}
 
         next_url: Union[
             str, None
@@ -232,13 +176,15 @@ class InSiteAPI(object):
             resp: requests.Response = requests.get(next_url, headers=headers)
 
             while True:
+                status_code: str = str(resp.status_code) if resp else "Unknown status"
+
                 if resp and resp.status_code == 200:
                     break
-                elif resp and resp.status_code == 500:
+                elif not resp or resp.status_code == 500:
                     # Server error. Pause & try again.
                     num_attempts += 1
                     self.__log.error(
-                        f"Server error: {resp.status_code}. Have made {num_attempts} attempts."
+                        f"Server error: {status_code}. Have made {num_attempts} attempts."
                     )
 
                     if num_attempts < 2:
@@ -250,7 +196,7 @@ class InSiteAPI(object):
                     else:
                         self.__log.error(f"Exiting.")
                         raise RuntimeError(
-                            f"Server error: {resp.status_code}. Have made {num_attempts} attempts. Exiting."
+                            f"Server error: {status_code}. Have made {num_attempts} attempts. Exiting."
                         )
                 else:
                     self.__log.error(
@@ -258,8 +204,8 @@ class InSiteAPI(object):
                             resp.text if resp else "Unknown error"
                         )
                     )
-                    self.__log.error(resp.status_code)
-                    raise RuntimeError(f"Server error: {resp.status_code}. Exiting.")
+                    self.__log.error(status_code)
+                    raise RuntimeError(f"Server error: {status_code}. Exiting.")
 
             ps_data: dict = resp.json()
 
@@ -290,16 +236,17 @@ class InSiteAPI(object):
                 resource = entry["resource"]
                 h = make_header(resource)
                 self.__official_header = join_headers(self.__official_header, h)
-                organization = resource["organization"]
 
-                if organization is None or organization.strip() == "":
-                    organization = "Unpaired"
+                if "organization" in resource:
+                    organization: str = resource["organization"]
 
-                if organization not in data:
-                    data[organization] = []
+                    if organization is None or organization.strip() == "":
+                        organization = "Unpaired"
 
-                data[organization].append(resource)
-                everything.append(resource)
+                    if organization not in data:
+                        data[organization] = []
+                    else:
+                        data[organization].append(resource)
 
             try:
                 next_url_info: dict = ps_data["link"][0]
@@ -313,4 +260,4 @@ class InSiteAPI(object):
                 self.__log.error("Key error")
                 pass
 
-        return {"by organization": data, "all": everything}
+        return data

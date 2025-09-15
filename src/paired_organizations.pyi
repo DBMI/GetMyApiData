@@ -8,7 +8,7 @@ class PairedOrganization:
     def organization(self) -> str: ...
 
 class PairedOrganizations:
-    def __init__(self, all: bool, list: List[PairedOrganization]) -> None:
+    def __init__(self, my_all: bool, my_list: List[PairedOrganization]) -> None:
         self.__all: bool = None
         self.__list: List[PairedOrganization] = []
     def all_allowed(self) -> bool: ...
