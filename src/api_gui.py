@@ -1,10 +1,9 @@
 import argparse
 import logging
 import os
-import sys
+from collections.abc import Callable
 from configparser import ConfigParser
 from tkinter import filedialog
-from typing import List
 
 import wx
 import wx.adv
@@ -15,7 +14,6 @@ from src.convert_to_hp_format import HealthProConverter
 from src.gcloud_tools import GCloudTools, gcloud_tools_installed
 from src.insite_api import InSiteAPI
 from src.my_logging import setup_logging
-from src.paired_organizations import PairedOrganization, PairedOrganizations
 from src.splash import MySplashScreen
 
 
@@ -35,11 +33,16 @@ class ApiGui(wx.Dialog):
             self,
             parent=None,
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-            title="Get Awardee InSite API data",
+            title="Get InSite API data",
         )
+
+        # Dictionaries of controls linking text controls with their restore buttons.
+        self.__buttons_and_text_boxes: dict = {}
+        self.__text_boxes_and_buttons: dict = {}
 
         # Variables we need for data request.
         self.__aou_service_account: str = config["Logon"]["aou_service_account"]
+        self.__awardee: str = config["AoU"]["awardee"]
         self.__pmi_account: str = config["Logon"]["pmi_account"]
         self.__project: str = config["Logon"]["project"]
         self.__token_file: str = config["Logon"]["token_file"]
@@ -63,7 +66,7 @@ class ApiGui(wx.Dialog):
         title_text: wx.StaticText = wx.StaticText(
             my_panel,
             id=wx.ID_ANY,
-            label="Get Awardee InSite API data: " + config["AoU"]["organization"],
+            label="Get InSite API data",
         )
         title_text.SetFont(title_font)
         grid.Add(
@@ -75,107 +78,59 @@ class ApiGui(wx.Dialog):
         )
         grid.AddGrowableCol(idx=1, proportion=1)
 
-        # PROJECT NAME
-        project_label: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="Project"
-        )
-        grid.Add(project_label, pos=(1, 0), flag=wx.ALIGN_RIGHT, border=5)
-        self.__project_text: wx.TextCtrl = wx.TextCtrl(
-            my_panel, id=wx.ID_ANY, value=self.__project
-        )
-        self.__project_text.Bind(wx.EVT_TEXT, self.__on_project_text_changed)
-        grid.Add(
-            self.__project_text, pos=(1, 1), flag=wx.EXPAND | wx.ALIGN_LEFT, border=5
-        )
-        self.__restore_project_button: wx.Button = wx.Button(
+        # AWARDEE
+        self.__add_controls(
+            1,
             my_panel,
-            id=wx.ID_ANY,
-            label="Restore",
-            size=wx.Size(50, 25),
-            style=wx.BORDER_SUNKEN,
+            grid,
+            "Awardee",
+            self.__awardee,
+            self.__on_awardee_text_changed,
+            self.__on_restore_awardee_button_clicked,
         )
-        self.__restore_project_button.Disable()
-        grid.Add(self.__restore_project_button, pos=(1, 2), flag=wx.ALL, border=5)
-        self.__restore_project_button.Bind(
-            wx.EVT_BUTTON, self.__on_restore_project_button_clicked
+
+        # PROJECT NAME
+        self.__add_controls(
+            2,
+            my_panel,
+            grid,
+            "Project",
+            self.__project,
+            self.__on_project_text_changed,
+            self.__on_restore_project_button_clicked,
         )
 
         # PMI OPS ACCOUNT
-        pmi_account_label: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="PMI Account"
-        )
-        grid.Add(pmi_account_label, pos=(2, 0), flag=wx.ALIGN_RIGHT, border=5)
-        self.__pmi_account_text: wx.TextCtrl = wx.TextCtrl(
-            my_panel, id=wx.ID_ANY, value=self.__pmi_account
-        )
-        self.__pmi_account_text.Bind(wx.EVT_TEXT, self.__on_pmi_account_text_changed)
-        grid.Add(self.__pmi_account_text, pos=(2, 1), flag=wx.EXPAND | wx.ALL, border=5)
-        self.__restore_pmi_account_button: wx.Button = wx.Button(
+        self.__add_controls(
+            3,
             my_panel,
-            id=wx.ID_ANY,
-            label="Restore",
-            size=wx.Size(50, 25),
-            style=wx.BORDER_SUNKEN,
-        )
-        self.__restore_pmi_account_button.Disable()
-        grid.Add(self.__restore_pmi_account_button, pos=(2, 2), flag=wx.ALL, border=5)
-        self.__restore_pmi_account_button.Bind(
-            wx.EVT_BUTTON, self.__on_restore_pmi_account_button_clicked
+            grid,
+            "PMI Account",
+            self.__pmi_account,
+            self.__on_pmi_account_text_changed,
+            self.__on_restore_pmi_account_button_clicked,
         )
 
         # AOU SERVICE ACCOUNT
-        aou_service_account_label: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="AoU Service Account"
-        )
-        grid.Add(aou_service_account_label, pos=(3, 0), flag=wx.ALIGN_RIGHT, border=5)
-        self.__aou_service_account_text: wx.TextCtrl = wx.TextCtrl(
-            my_panel, id=wx.ID_ANY, value=self.__aou_service_account
-        )
-        self.__aou_service_account_text.Bind(
-            wx.EVT_TEXT, self.__on_aou_service_account_text_changed
-        )
-        grid.Add(
-            self.__aou_service_account_text,
-            pos=(3, 1),
-            flag=wx.EXPAND | wx.ALL,
-            border=5,
-        )
-        self.__restore_aou_service_account_button: wx.Button = wx.Button(
+        self.__add_controls(
+            4,
             my_panel,
-            id=wx.ID_ANY,
-            label="Restore",
-            size=wx.Size(50, 25),
-            style=wx.BORDER_SUNKEN,
-        )
-        self.__restore_aou_service_account_button.Disable()
-        grid.Add(
-            self.__restore_aou_service_account_button, pos=(3, 2), flag=wx.ALL, border=5
-        )
-        self.__restore_aou_service_account_button.Bind(
-            wx.EVT_BUTTON, self.__on_restore_aou_service_account_button_clicked
+            grid,
+            "AoU Service Account",
+            self.__aou_service_account,
+            self.__on_aou_service_account_text_changed,
+            self.__on_restore_aou_service_account_button_clicked,
         )
 
         # LOCATION OF TOKEN FILE
-        token_file_label: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="Token File"
-        )
-        grid.Add(token_file_label, pos=(4, 0), flag=wx.ALIGN_RIGHT, border=5)
-        self.__token_file_text: wx.TextCtrl = wx.TextCtrl(
-            my_panel, id=wx.ID_ANY, value=self.__token_file
-        )
-        self.__token_file_text.Bind(wx.EVT_TEXT, self.__on_token_file_text_changed)
-        grid.Add(self.__token_file_text, pos=(4, 1), flag=wx.EXPAND | wx.ALL, border=5)
-        self.__restore_token_file_button: wx.Button = wx.Button(
+        self.__add_controls(
+            5,
             my_panel,
-            id=wx.ID_ANY,
-            label="Restore",
-            size=wx.Size(50, 25),
-            style=wx.BORDER_SUNKEN,
-        )
-        self.__restore_token_file_button.Disable()
-        grid.Add(self.__restore_token_file_button, pos=(4, 2), flag=wx.ALL, border=5)
-        self.__restore_token_file_button.Bind(
-            wx.EVT_BUTTON, self.__on_restore_token_file_button_clicked
+            grid,
+            "Token File",
+            self.__token_file,
+            self.__on_token_file_text_changed,
+            self.__on_restore_token_file_button_clicked,
         )
 
         # CHECK THAT GCLOUD TOOLS ARE INSTALLED.
@@ -185,9 +140,8 @@ class ApiGui(wx.Dialog):
             self.__gauge = wx.Gauge(my_panel, range=100, size=wx.Size(350, 25))
             grid.Add(
                 self.__gauge,
-                pos=(5, 0),
-                span=(1, 2),
-                flag=wx.ALIGN_CENTER | wx.TOP,
+                pos=(6, 1),
+                flag=wx.EXPAND | wx.ALL,
                 border=5,
             )
 
@@ -197,7 +151,7 @@ class ApiGui(wx.Dialog):
             )
             grid.Add(
                 self.__status_text,
-                pos=(6, 0),
+                pos=(7, 1),
                 span=(1, 2),
                 flag=wx.EXPAND | wx.ALL,
                 border=5,
@@ -207,7 +161,7 @@ class ApiGui(wx.Dialog):
             self.__ok_button: wx.Button = wx.Button(
                 my_panel, id=wx.ID_ANY, label="Request Data", style=wx.BORDER_SUNKEN
             )
-            grid.Add(self.__ok_button, pos=(7, 0), flag=wx.ALL, border=5)
+            grid.Add(self.__ok_button, pos=(8, 0), flag=wx.ALL, border=5)
             self.__ok_button.Bind(wx.EVT_BUTTON, self.__on_ok_clicked)
         else:
             link_label = "Must first install GCloud tools"
@@ -222,7 +176,7 @@ class ApiGui(wx.Dialog):
         cancel_button: wx.Button = wx.Button(
             my_panel, id=wx.ID_ANY, label="Cancel", style=wx.BORDER_SUNKEN
         )
-        grid.Add(cancel_button, pos=(7, 1), flag=wx.ALL, border=5)
+        grid.Add(cancel_button, pos=(8, 1), flag=wx.ALL, border=5)
         cancel_button.Bind(wx.EVT_BUTTON, self.__on_cancel_clicked)
 
         # VERSION INFO
@@ -236,7 +190,7 @@ class ApiGui(wx.Dialog):
             my_panel, id=wx.ID_ANY, label="Version: " + get_exe_version()
         )
         version_text.SetFont(footnote_font)
-        grid.Add(version_text, pos=(7, 2), flag=wx.ALIGN_LEFT, border=5)
+        grid.Add(version_text, pos=(8, 2), flag=wx.ALIGN_LEFT, border=5)
 
         # Connect grid sizer to panel.
         my_panel.SetSizerAndFit(grid)
@@ -248,6 +202,33 @@ class ApiGui(wx.Dialog):
         self.Fit()
         self.ShowModal()
 
+    def __add_controls(
+        self,
+        row: int,
+        panel: wx.Panel,
+        grid: wx.GridBagSizer,
+        label: str,
+        default: str,
+        text_changed_fn: Callable,
+        restore_fn: Callable,
+    ) -> None:
+        control_label: wx.StaticText = wx.StaticText(panel, id=wx.ID_ANY, label=label)
+        grid.Add(control_label, pos=(row, 0), flag=wx.ALIGN_RIGHT, border=5)
+        text_control: wx.TextCtrl = wx.TextCtrl(panel, id=wx.ID_ANY, value=default)
+        text_control.Bind(wx.EVT_TEXT, text_changed_fn)
+        grid.Add(text_control, pos=(row, 1), flag=wx.EXPAND | wx.ALL, border=5)
+        restore_button: wx.Button = wx.Button(
+            panel,
+            id=wx.ID_ANY,
+            label="Restore",
+            size=wx.Size(50, 25),
+            style=wx.BORDER_SUNKEN,
+        )
+        restore_button.Disable()
+        grid.Add(restore_button, pos=(row, 2), flag=wx.ALL, border=5)
+        restore_button.Bind(wx.EVT_BUTTON, restore_fn)
+        self.__text_boxes_and_buttons[text_control] = restore_button
+        self.__buttons_and_text_boxes[restore_button] = text_control
 
     def __enable_if_inputs_complete(self) -> None:
         if (
@@ -255,6 +236,7 @@ class ApiGui(wx.Dialog):
             and self.__pmi_account
             and self.__project
             and self.__token_file
+            and os.path.isfile(self.__token_file)
         ):
             self.__ok_button.Enable()
         else:
@@ -282,7 +264,7 @@ class ApiGui(wx.Dialog):
         )
         self.__set_status("Requesting InSiteAPI data...")
 
-        data_combined: dict = api_mgr.request_data(
+        data: dict = api_mgr.request_data(
             awardee=self.__config["AoU"]["awardee"],
             endpoint=self.__config["AoU"]["endpoint"],
             token=token,
@@ -293,9 +275,8 @@ class ApiGui(wx.Dialog):
         # Create .csv output files.
         self.__set_status(f"Saving data to {data_directory}...")
         api_mgr.output_data(
-            data_combined=data_combined,
+            data=data,
             data_directory=data_directory,
-            paired_organizations=self.__get_paired_organizations(),
         )
         self.__set_status(f"Download complete. Results in {data_directory}.")
         self.__set_progress(0)
@@ -319,7 +300,7 @@ class ApiGui(wx.Dialog):
 
         # Open the directory selection dialog
         directory_path: str = filedialog.askdirectory(
-            title="Select Directory to Save File",
+            title="Select Directory to Save AoU Participants File",
             initialdir=initial_dir,  # Optional: Set an initial directory
         )
 
@@ -329,40 +310,21 @@ class ApiGui(wx.Dialog):
 
         return directory_path
 
-    def __get_paired_organizations(self) -> PairedOrganizations:
-        paired_organizations: List[PairedOrganization] = []
-        all_allowed: bool = False
-
-        if self.__config["AoU"]["organization"].upper() == "ALL":
-            all_allowed = True
-            unpaired_empty_marker: str = (
-                "UNSET"  # We're generally interested in Unpaired organizations
-            )
-            paired_organizations = [
-                PairedOrganization(organization="UCSD", marker="CAL_PMC_UCSD"),
-                PairedOrganization(organization="SDBB", marker="CAL_PMC_SDBB"),
-                PairedOrganization(organization="UCSF", marker="CAL_PMC_UCSF"),
-                PairedOrganization(organization="UCD", marker="CAL_PMC_UCD"),
-                PairedOrganization(
-                    organization="Unpaired", marker=unpaired_empty_marker
-                ),
-            ]
-        else:
-            organization: str = self.__config["AoU"]["organization"].upper()
-            marker: str = self.__config["AoU"]["awardee"] + "_" + organization
-            paired_organizations.append(
-                PairedOrganization(organization=organization, marker=marker)
-            )
-
-        return PairedOrganizations(all=all_allowed, list=paired_organizations)
-
-    def __on_aou_service_account_text_changed(self, event):
-        self.__aou_service_account = self.__aou_service_account_text.GetValue()
-        self.__restore_aou_service_account_button.Enable()
+    def __on_aou_service_account_text_changed(self, event: wx.EVT_TEXT):
+        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
+        self.__aou_service_account = text_ctrl_source.GetValue()
+        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+        restore_button.Enable()
         self.__enable_if_inputs_complete()
 
-    def __on_cancel_clicked(self, event) -> None:
-        # self.EndModal(wx.ID_CANCEL)
+    def __on_awardee_text_changed(self, event: wx.EVT_TEXT):
+        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
+        self.__awardee = text_ctrl_source.GetValue()
+        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+        restore_button.Enable()
+        self.__enable_if_inputs_complete()
+
+    def __on_cancel_clicked(self, event: wx.EVT_BUTTON) -> None:
         self.Destroy()
         event.Skip()
 
@@ -371,6 +333,7 @@ class ApiGui(wx.Dialog):
 
         # Update config file.
         self.__config["Logon"]["aou_service_account"] = self.__aou_service_account
+        self.__config["AoU"]["awardee"] = self.__awardee
         self.__config["Logon"]["pmi_account"] = self.__pmi_account
         self.__config["Logon"]["project"] = self.__project
         self.__config["Logon"]["token_file"] = self.__token_file
@@ -379,37 +342,63 @@ class ApiGui(wx.Dialog):
         self.__get_data()
         self.__ok_button.Enable()
 
-    def __on_pmi_account_text_changed(self, event) -> None:
-        self.__pmi_account = self.__pmi_account_text.GetValue()
-        self.__restore_pmi_account_button.Enable()
+    def __on_pmi_account_text_changed(self, event: wx.EVT_TEXT) -> None:
+        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
+        self.__pmi_account = text_ctrl_source.GetValue()
+        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+        restore_button.Enable()
         self.__enable_if_inputs_complete()
 
-    def __on_project_text_changed(self, event) -> None:
-        self.__project = self.__project_text.GetValue()
-        self.__restore_project_button.Enable()
+    def __on_project_text_changed(self, event: wx.EVT_TEXT) -> None:
+        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
+        self.__project = text_ctrl_source.GetValue()
+        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+        restore_button.Enable()
         self.__enable_if_inputs_complete()
 
-    def __on_restore_aou_service_account_button_clicked(self, event: wx.Event) -> None:
-        self.__aou_service_account_text.SetValue(
-            self.__config["Logon"]["aou_service_account"]
-        )
-        self.__restore_aou_service_account_button.Disable()
+    def __on_restore_aou_service_account_button_clicked(
+        self, event: wx.EVT_BUTTON
+    ) -> None:
+        button: wx.Button = event.GetEventObject()
+        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+        text_ctrl.SetValue(self.__config["Logon"]["aou_service_account"])
+        button.Disable()
 
-    def __on_restore_pmi_account_button_clicked(self, event: wx.Event) -> None:
-        self.__pmi_account_text.SetValue(self.__config["Logon"]["pmi_account"])
-        self.__restore_pmi_account_button.Disable()
+    def __on_restore_awardee_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        button: wx.Button = event.GetEventObject()
+        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+        text_ctrl.SetValue(self.__config["AoU"]["awardee"])
+        button.Disable()
 
-    def __on_restore_project_button_clicked(self, event: wx.Event) -> None:
-        self.__project_text.SetValue(self.__config["Logon"]["project"])
-        self.__restore_project_button.Disable()
+    def __on_restore_marker_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        button: wx.Button = event.GetEventObject()
+        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+        text_ctrl.SetValue(self.__config["AoU"]["organization"])
+        button.Disable()
 
-    def __on_restore_token_file_button_clicked(self, event: wx.Event) -> None:
-        self.__token_file_text.SetValue(self.__config["Logon"]["token_file"])
-        self.__restore_token_file_button.Disable()
+    def __on_restore_pmi_account_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        button: wx.Button = event.GetEventObject()
+        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+        text_ctrl.SetValue(self.__config["Logon"]["pmi_account"])
+        button.Disable()
 
-    def __on_token_file_text_changed(self, event) -> None:
-        self.__token_file = self.__token_file_text.GetValue()
-        self.__restore_token_file_button.Enable()
+    def __on_restore_project_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        button: wx.Button = event.GetEventObject()
+        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+        text_ctrl.SetValue(self.__config["Logon"]["project"])
+        button.Disable()
+
+    def __on_restore_token_file_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        button: wx.Button = event.GetEventObject()
+        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+        text_ctrl.SetValue(self.__config["Logon"]["token_file"])
+        button.Disable()
+
+    def __on_token_file_text_changed(self, event: wx.EVT_TEXT) -> None:
+        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
+        self.__token_file = text_ctrl_source.GetValue()
+        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+        restore_button.Enable()
         self.__enable_if_inputs_complete()
 
     def __set_progress(self, pct: int) -> None:

@@ -2,9 +2,6 @@ import logging
 from collections.abc import Callable as Callable
 from typing import Union
 
-from paired_organizations import PairedOrganization as PairedOrganization
-from paired_organizations import PairedOrganizations
-
 def join_headers(h1: list, h2: list) -> list: ...
 def make_header(dict1: dict) -> list: ...
 
@@ -16,12 +13,7 @@ class InSiteAPI:
         self.__official_header: list = []
         self.__progress_fn: Callable = None
         self.__status_fn: Callable = None
-    def output_data(
-        self,
-        data_combined: dict,
-        data_directory: str,
-        paired_organizations: PairedOrganizations,
-    ) -> None: ...
+    def output_data(self, data: dict, data_directory: str) -> None: ...
     def request_data(
         self,
         awardee: str,
