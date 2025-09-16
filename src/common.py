@@ -24,7 +24,7 @@ def get_args(local_args: Callable) -> argparse.Namespace:
 def get_base_path() -> str:
     base_path: str
 
-    if getattr(sys, "frozen", True) and hasattr(sys, "_MEIPASS"):
+    if getattr(sys, "frozen", False):
         base_path = sys._MEIPASS
     else:
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -46,13 +46,13 @@ def get_config(args: argparse.Namespace) -> configparser.ConfigParser:
 
 
 def get_default_ini_path() -> str:
-    return os.path.join(os.getcwd(), "src", "config.ini")
+    return os.path.join(get_base_path(), "config.ini")
 
 
 def get_exe_path() -> str:
     exe_path: str
 
-    if getattr(sys, "frozen", True) and hasattr(sys, "_MEIPASS"):
+    if getattr(sys, "frozen", False):
         exe_path = sys.executable
     else:
         exe_path = os.path.abspath(__file__)
@@ -116,7 +116,7 @@ def make_config(config_file: str) -> None:
 
 
 def parse_version_file() -> str:
-    file_path: str = os.path.join(os.getcwd(), "src", "version_info.txt")
+    file_path: str = os.path.join(get_base_path(), "version_info.txt")
 
     with open(file_path, "r", encoding="utf-8") as version_file:
         file_content = version_file.read()
