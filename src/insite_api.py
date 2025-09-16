@@ -9,7 +9,7 @@ from typing import List, Union
 
 import requests
 
-from my_logging import setup_logging
+from .my_logging import setup_logging
 
 
 def join_headers(h1: list, h2: list) -> list:
