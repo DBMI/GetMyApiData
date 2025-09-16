@@ -1,0 +1,6 @@
+*.log
+*.log.*
+
+dist
+src/build
+src/dist

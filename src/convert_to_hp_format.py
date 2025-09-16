@@ -9,7 +9,7 @@ import numpy as np
 import pandas
 import pandas as pd
 
-from my_logging import setup_logging
+from .my_logging import setup_logging
 
 
 # UTILITY CLASS

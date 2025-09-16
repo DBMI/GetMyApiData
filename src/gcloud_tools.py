@@ -5,7 +5,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from my_logging import setup_logging
+from .my_logging import setup_logging
 
 
 def gcloud_tools_installed() -> bool:
