@@ -425,7 +425,7 @@ if __name__ == "__main__":
     app.Yield()
 
     log: logging.Logger = setup_logging(
-        log_filename=os.path.join(os.getcwd(), "api_gui.log")
+        log_filename=os.path.join(os.getcwd(), "getmyapidata.log")
     )
 
     log.info("Getting arguments.")
