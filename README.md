@@ -5,10 +5,9 @@ A GUI tool for querying All of Us participant data using the InSite API.
 
 ### Installation
 
-1. Install `gcloud tools` from `https://cloud.google.com/sdk/docs/install`
-2. Get `getmyapidata-0.1.0-py3-none-any.whl` from [GitHub](https://github.com/DBMI/GetMyApiData/releases/tag/0.1).
-3. Install with `pip install getmyapidata-0.1.0-py3-none-any.whl`
-4. Run with `api_gui.py`
+1. Install [`gcloud tools`](https://cloud.google.com/sdk/docs/install)
+2. Download the `.exe` version of this app from [GitHub](https://github.com/DBMI/GetMyApiData/releases/tag/v0.1-exe)
+3. Run `GetMyApiData.exe`
 
 ### Operation
 Once you've inserted into the GUI your actual PMI account and service account information and selected the location for the `key.json` file, press `Request Data`.
