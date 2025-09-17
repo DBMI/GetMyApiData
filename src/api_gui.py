@@ -8,13 +8,11 @@ from tkinter import filedialog
 import wx
 import wx.adv
 
-from src.common import (get_args, get_base_path, get_config, get_exe_version,
-                        update_config)
+from src.common import get_exe_version, update_config
 from src.convert_to_hp_format import HealthProConverter
 from src.gcloud_tools import GCloudTools, gcloud_tools_installed
 from src.insite_api import InSiteAPI
 from src.my_logging import setup_logging
-from src.splash import MySplashScreen
 
 
 class ApiGui(wx.Dialog):
@@ -23,7 +21,7 @@ class ApiGui(wx.Dialog):
 
         self.__log: logging.Logger = setup_logging(
             log_filename=os.path.join(
-                self.__config["Logs"]["log_directory"],
+                os.getcwd(),
                 "api_gui.log",
             )
         )
@@ -187,7 +185,7 @@ class ApiGui(wx.Dialog):
             weight=wx.FONTWEIGHT_NORMAL,
         )
         version_text: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="Version: " + get_exe_version()
+            my_panel, id=wx.ID_ANY, label="Version: " + get_exe_version(self.__log)
         )
         version_text.SetFont(footnote_font)
         grid.Add(version_text, pos=(8, 2), flag=wx.ALIGN_LEFT, border=5)
@@ -409,37 +407,3 @@ class ApiGui(wx.Dialog):
         self.__log.info(status)
         self.__status_text.SetLabel(status)
         wx.Yield()
-
-
-def get_local_args(parser: argparse.ArgumentParser) -> None:
-    pass
-
-
-if __name__ == "__main__":
-    # Display splash screen.
-    app: wx.App = wx.App(redirect=False)
-    splash = MySplashScreen(
-        os.path.join(get_base_path(), "UCSD_school_of_medicine.png")
-    )
-    splash.Show()
-    app.Yield()
-
-    log: logging.Logger = setup_logging(
-        log_filename=os.path.join(os.getcwd(), "getmyapidata.log")
-    )
-
-    log.info("Getting arguments.")
-    args: argparse.Namespace = get_args(get_local_args)
-    log.info("Getting config.")
-    myconfig = get_config(args)
-
-    # Create the GUI.
-    log.info("Instantiating ApiGui object.")
-    gui: ApiGui = ApiGui(myconfig)
-
-    try:
-        splash.Destroy()
-    except RuntimeError:
-        pass
-
-    app.MainLoop()

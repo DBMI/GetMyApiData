@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['src\\api_gui.py'],
+    ['src\\__main__.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('UCSD_school_of_medicine.png', '.'), ('config.ini', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

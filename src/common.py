@@ -1,5 +1,6 @@
 import argparse
 import configparser
+import logging
 import os
 import re
 import sys
@@ -32,11 +33,15 @@ def get_base_path() -> str:
     return base_path
 
 
-def get_config(args: argparse.Namespace) -> configparser.ConfigParser:
+def get_config(
+    args: argparse.Namespace, log: logging.Logger
+) -> configparser.ConfigParser:
     config_file: str = get_default_ini_path()
+    log.info(f"Reading config from {config_file}.")
 
     if not os.path.isfile(config_file):
-        make_config(config_file)
+        log.info(f"Config file {config_file} not found.")
+        make_config(config_file, log)
 
     config = configparser.ConfigParser(
         interpolation=configparser.ExtendedInterpolation()
@@ -46,7 +51,7 @@ def get_config(args: argparse.Namespace) -> configparser.ConfigParser:
 
 
 def get_default_ini_path() -> str:
-    return os.path.join(get_base_path(), "config.ini")
+    return str(os.path.join(os.getcwd(), "config.ini"))
 
 
 def get_exe_path() -> str:
@@ -60,17 +65,21 @@ def get_exe_path() -> str:
     return exe_path
 
 
-def get_exe_version() -> str:
+def get_exe_version(log: logging.Logger) -> str:
     exe_path: str = get_exe_path()
+    log.info("Found exe path: {exe_path}.")
 
     try:
-        # Get the full path to the executable
+        # Get the full path to the executable.
+        log.info(f"Getting abspath from {exe_path}.")
         full_path = os.path.abspath(exe_path)
 
-        # Get the file version information
+        # Get the file version information.
+        log.info(f"Requesting version info from {full_path}.")
         info = win32api.GetFileVersionInfo(full_path, "\\")
+        log.info(f"Version info: {info}.")
 
-        # Extract the major, minor, build, and private parts of the version
+        # Extract the major, minor, build, and private parts of the version.
         ms = info["FileVersionMS"]
         ls = info["FileVersionLS"]
 
@@ -82,7 +91,6 @@ def get_exe_version() -> str:
         )
         return version
     except Exception as e:
-
         ver_from_file: str = parse_version_file()
 
         if ver_from_file:
@@ -92,7 +100,7 @@ def get_exe_version() -> str:
         return ""
 
 
-def make_config(config_file: str) -> None:
+def make_config(config_file: str, log: logging.Logger) -> None:
     cwd: str = os.getcwd()
     config: configparser.ConfigParser = configparser.ConfigParser()
     config["AoU"] = {
@@ -112,11 +120,12 @@ def make_config(config_file: str) -> None:
     config["Logs"] = {"log_directory": cwd}
 
     with open(config_file, "w") as configfile:
+        log.info(f"Writing config to file {config_file}.")
         config.write(configfile)
 
 
 def parse_version_file() -> str:
-    file_path: str = os.path.join(get_base_path(), "version_info.txt")
+    file_path: str = resource_path("version_info.txt")
 
     with open(file_path, "r", encoding="utf-8") as version_file:
         file_content = version_file.read()
@@ -127,6 +136,18 @@ def parse_version_file() -> str:
             return match.group("version")
 
         return ""
+
+
+# https://stackoverflow.com/a/13790741/20241849
+def resource_path(relative_path: str) -> str:
+    """Get absolute path to resource, works for dev and PyInstaller."""
+    if getattr(sys, "frozen", False):
+        # Running in a PyInstaller bundle.
+        base_path = sys._MEIPASS
+    else:
+        # Running in a normal Python environment.
+        base_path = os.getcwd()
+    return str(os.path.join(base_path, relative_path))
 
 
 def update_config(config: configparser.ConfigParser) -> None:
