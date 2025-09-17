@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['src\\api_gui.py'],
+    ['src\\__main__.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('UCSD_school_of_medicine.png', '.'), ('config.ini', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,6 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    version='version_info.txt',
     icon=['src\\school_of_medicine.ico'],
 )
