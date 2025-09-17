@@ -5,7 +5,6 @@ import os
 import re
 import sys
 from collections.abc import Callable
-from typing import LiteralString
 
 import win32api
 
@@ -52,7 +51,7 @@ def get_config(
 
 
 def get_default_ini_path() -> str:
-    return resource_path("config.ini")
+    return str(os.path.join(os.getcwd(), "config.ini"))
 
 
 def get_exe_path() -> str:
@@ -66,17 +65,21 @@ def get_exe_path() -> str:
     return exe_path
 
 
-def get_exe_version() -> str:
+def get_exe_version(log: logging.Logger) -> str:
     exe_path: str = get_exe_path()
+    log.info("Found exe path: {exe_path}.")
 
     try:
-        # Get the full path to the executable
+        # Get the full path to the executable.
+        log.info(f"Getting abspath from {exe_path}.")
         full_path = os.path.abspath(exe_path)
 
-        # Get the file version information
+        # Get the file version information.
+        log.info(f"Requesting version info from {full_path}.")
         info = win32api.GetFileVersionInfo(full_path, "\\")
+        log.info(f"Version info: {info}.")
 
-        # Extract the major, minor, build, and private parts of the version
+        # Extract the major, minor, build, and private parts of the version.
         ms = info["FileVersionMS"]
         ls = info["FileVersionLS"]
 
@@ -138,12 +141,12 @@ def parse_version_file() -> str:
 # https://stackoverflow.com/a/13790741/20241849
 def resource_path(relative_path: str) -> str:
     """Get absolute path to resource, works for dev and PyInstaller."""
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Running in a PyInstaller bundle.
         base_path = sys._MEIPASS
     else:
         # Running in a normal Python environment.
-        base_path = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.getcwd()
     return str(os.path.join(base_path, relative_path))
 
 

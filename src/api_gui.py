@@ -8,8 +8,7 @@ from tkinter import filedialog
 import wx
 import wx.adv
 
-from src.common import (get_args, get_base_path, get_config, get_exe_version,
-                        resource_path, update_config)
+from src.common import get_exe_version, update_config
 from src.convert_to_hp_format import HealthProConverter
 from src.gcloud_tools import GCloudTools, gcloud_tools_installed
 from src.insite_api import InSiteAPI
@@ -22,7 +21,7 @@ class ApiGui(wx.Dialog):
 
         self.__log: logging.Logger = setup_logging(
             log_filename=os.path.join(
-                self.__config["Logs"]["log_directory"],
+                os.getcwd(),
                 "api_gui.log",
             )
         )
@@ -186,7 +185,7 @@ class ApiGui(wx.Dialog):
             weight=wx.FONTWEIGHT_NORMAL,
         )
         version_text: wx.StaticText = wx.StaticText(
-            my_panel, id=wx.ID_ANY, label="Version: " + get_exe_version()
+            my_panel, id=wx.ID_ANY, label="Version: " + get_exe_version(self.__log)
         )
         version_text.SetFont(footnote_font)
         grid.Add(version_text, pos=(8, 2), flag=wx.ALIGN_LEFT, border=5)

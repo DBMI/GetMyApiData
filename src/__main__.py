@@ -22,9 +22,7 @@ if __name__ == "__main__":
 
     # Display splash screen.
     app: wx.App = wx.App(redirect=False)
-    splash_path: str = resource_path("UCSD_school_of_medicine.png")
-    log.info(f"Splash path: {splash_path}")
-    splash = MySplashScreen(splash_path)
+    splash = MySplashScreen(resource_path("UCSD_school_of_medicine.png"))
     splash.Show()
     app.Yield()
 
