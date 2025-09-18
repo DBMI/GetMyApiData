@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['src\\__main__.py'],
-    pathex=[],
+    ['src\\getmyapidata\\__main__.py'],
+    pathex=['src/getmyapidata/'],
     binaries=[],
-    datas=[('UCSD_school_of_medicine.png', '.'), ('config.ini', '.')],
+    datas=[('UCSD_school_of_medicine.png', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -36,5 +36,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version='version_info.txt',
-    icon=['src\\school_of_medicine.ico'],
+    icon=['src\\getmyapidata\\school_of_medicine.ico'],
 )
