@@ -1,3 +1,6 @@
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![Last Commit Date](./last-commit-badge.svg?dummy=8484744)
+
 ## Get My API Data
 A GUI tool for querying All of Us participant data using the InSite API.
 
@@ -6,8 +9,10 @@ A GUI tool for querying All of Us participant data using the InSite API.
 ### Installation
 
 1. Install [`gcloud tools`](https://cloud.google.com/sdk/docs/install)
-2. Download the `.exe` version of this app from [GitHub](https://github.com/DBMI/GetMyApiData/releases/tag/v0.1-exe)
-3. Run `GetMyApiData.exe`
+2. Either:
+    * Download the `.exe` version of this app from [GitHub](https://github.com/DBMI/GetMyApiData/releases/tag/v0.1-exe) and run `GetMyApiData.exe`
+    * Or download the source code using ```git clone https://github.com/DBMI/GetMyApiData.git``` and–within the Python virtual environment–run ``__main__.py``
+
 
 ### Operation
 Once you've inserted into the GUI your actual PMI account and service account information and selected the location for the `key.json` file, press `Request Data`.
