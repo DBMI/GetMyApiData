@@ -2,7 +2,6 @@ import argparse
 import configparser
 import logging
 from collections.abc import Callable as Callable
-from typing import LiteralString
 
 def get_args(local_args: Callable) -> argparse.Namespace: ...
 def get_base_path() -> str: ...

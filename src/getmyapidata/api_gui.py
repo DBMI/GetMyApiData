@@ -7,12 +7,11 @@ from tkinter import filedialog
 
 import wx
 import wx.adv
-
-from src.common import get_exe_version, update_config
-from src.convert_to_hp_format import HealthProConverter
-from src.gcloud_tools import GCloudTools, gcloud_tools_installed
-from src.insite_api import InSiteAPI
-from src.my_logging import setup_logging
+from common import get_exe_version, update_config
+from convert_to_hp_format import HealthProConverter
+from gcloud_tools import GCloudTools, gcloud_tools_installed
+from insite_api import InSiteAPI
+from my_logging import setup_logging
 
 
 class ApiGui(wx.Dialog):

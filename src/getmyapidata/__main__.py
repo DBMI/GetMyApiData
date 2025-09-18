@@ -4,10 +4,10 @@ import os
 
 import wx.adv
 
-from src.api_gui import ApiGui
-from src.common import get_args, get_config, resource_path
-from src.my_logging import setup_logging
-from src.splash import MySplashScreen
+from api_gui import ApiGui
+from common import get_args, get_config, resource_path
+from my_logging import setup_logging
+from splash import MySplashScreen
 
 
 def get_local_args(parser: argparse.ArgumentParser) -> None:
