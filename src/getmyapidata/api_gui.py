@@ -76,7 +76,7 @@ class ApiGui(wx.Dialog):
         grid.AddGrowableCol(idx=1, proportion=1)
 
         # AWARDEE
-        self.__add_controls(
+        self.__awardee_text_ctrl = self.__add_controls(
             1,
             my_panel,
             grid,
@@ -87,7 +87,7 @@ class ApiGui(wx.Dialog):
         )
 
         # PROJECT NAME
-        self.__add_controls(
+        self.__project_text_ctrl = self.__add_controls(
             2,
             my_panel,
             grid,
@@ -98,7 +98,7 @@ class ApiGui(wx.Dialog):
         )
 
         # PMI OPS ACCOUNT
-        self.__add_controls(
+        self.__pmi_account_text_ctrl = self.__add_controls(
             3,
             my_panel,
             grid,
@@ -109,7 +109,7 @@ class ApiGui(wx.Dialog):
         )
 
         # AOU SERVICE ACCOUNT
-        self.__add_controls(
+        self.__aou_account_text_ctrl = self.__add_controls(
             4,
             my_panel,
             grid,
@@ -120,7 +120,7 @@ class ApiGui(wx.Dialog):
         )
 
         # LOCATION OF TOKEN FILE
-        self.__add_controls(
+        self.__token_file_text_ctrl = self.__add_controls(
             5,
             my_panel,
             grid,
@@ -208,7 +208,7 @@ class ApiGui(wx.Dialog):
         default: str,
         text_changed_fn: Callable,
         restore_fn: Callable,
-    ) -> None:
+    ) -> wx.TextCtrl:
         control_label: wx.StaticText = wx.StaticText(panel, id=wx.ID_ANY, label=label)
         grid.Add(control_label, pos=(row, 0), flag=wx.ALIGN_RIGHT, border=5)
         text_control: wx.TextCtrl = wx.TextCtrl(panel, id=wx.ID_ANY, value=default)
@@ -226,6 +226,7 @@ class ApiGui(wx.Dialog):
         restore_button.Bind(wx.EVT_BUTTON, restore_fn)
         self.__text_boxes_and_buttons[text_control] = restore_button
         self.__buttons_and_text_boxes[restore_button] = text_control
+        return text_control
 
     def __enable_if_inputs_complete(self) -> None:
         if (
@@ -329,6 +330,9 @@ class ApiGui(wx.Dialog):
     def __on_ok_clicked(self, event) -> None:
         self.__ok_button.Disable()
 
+        # Scrape the gui & get all control values.
+        self.__scrape_gui()
+
         # Update config file.
         self.__config["Logon"]["aou_service_account"] = self.__aou_service_account
         self.__config["AoU"]["awardee"] = self.__awardee
@@ -398,6 +402,13 @@ class ApiGui(wx.Dialog):
         restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
         restore_button.Enable()
         self.__enable_if_inputs_complete()
+
+    def __scrape_gui(self) -> None:
+        self.__aou_service_account = self.__aou_account_text_ctrl.GetValue()
+        self.__awardee = self.__awardee_text_ctrl.GetValue()
+        self.__pmi_account = self.__pmi_account_text_ctrl.GetValue()
+        self.__project = self.__project_text_ctrl.GetValue()
+        self.__token_file = self.__token_file_text_ctrl.GetValue()
 
     def __set_progress(self, pct: int) -> None:
         self.__gauge.SetValue(pct)
