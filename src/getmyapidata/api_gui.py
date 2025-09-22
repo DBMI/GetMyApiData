@@ -237,7 +237,8 @@ class ApiGui(wx.Dialog):
         ):
             self.__ok_button.Enable()
         else:
-            self.__ok_button.Disable()
+            # self.__ok_button.Disable()
+            self.__ok_button.Enable()
 
     def __get_data(self) -> None:
         self.__set_status("Calling GCloudTools...")
