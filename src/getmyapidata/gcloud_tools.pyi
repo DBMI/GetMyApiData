@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable as Callable
-from typing import Any
+from typing import Any, Union
 
 def gcloud_tools_installed() -> bool: ...
 def getoutput(command: Any) -> list[str]: ...
@@ -14,6 +14,7 @@ class GCloudTools:
         aou_service_account: str,
         token_file: str,
         log_directory: str,
+        log_level: Union[int, str] = "INFO",
         status_fn: Callable = ...,
     ) -> None:
         self.__log: logging.Logger = None

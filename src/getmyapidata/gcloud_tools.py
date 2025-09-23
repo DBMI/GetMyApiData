@@ -4,6 +4,7 @@ import subprocess
 import time
 from collections.abc import Callable
 from pathlib import Path
+from typing import Union
 
 from my_logging import setup_logging
 
@@ -65,6 +66,7 @@ class GCloudTools:
         aou_service_account: str,
         token_file: str,
         log_directory: str,
+        log_level: Union[int, str] = "INFO",
         status_fn: Callable = None,
     ):
         """
@@ -77,6 +79,7 @@ class GCloudTools:
         aou_service_account : str   pmi service account
         token_file : str            full path to token file
         log_directory : str         log directory
+        log_level: Union[int, str]  Optional log level
         status_fn : callable        Optional external fn to report status
         Return
         ------
@@ -89,6 +92,7 @@ class GCloudTools:
                 "gcloud_tools.log",
             )
         )
+        self.__log.setLevel(log_level)
         self.__pmi_account: str = pmi_account
         self.__project: str = project
         self.__service_account: str = aou_service_account
