@@ -3,7 +3,6 @@ import logging
 import os
 
 import wx.adv
-
 from api_gui import ApiGui
 from common import get_args, get_config, resource_path
 from my_logging import setup_logging

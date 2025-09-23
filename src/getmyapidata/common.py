@@ -5,8 +5,27 @@ import os
 import re
 import sys
 from collections.abc import Callable
+from pathlib import Path
 
 import win32api
+
+DUMMY: str = "<YourNameHere>"
+
+
+def ensure_path_exists(filename: str, log: logging.Logger) -> bool:
+    log.debug(f"Checking path '{filename}' exists.")
+    directory_name: str = os.path.dirname(filename)
+    log.debug(f"Checking directory '{directory_name}' exists.")
+    directory_path = Path(directory_name)
+
+    try:
+        directory_path.mkdir(parents=True, exist_ok=True)
+        log.debug(f"Directory '{directory_name}' created.")
+    except OSError as e:
+        log.error(f"Error ensuring directory '{directory_name} because: {e}")
+        print(f"Error ensuring directory '{directory_name}': {e}")
+
+    return os.path.exists(directory_name)
 
 
 def get_args(local_args: Callable) -> argparse.Namespace:
@@ -104,16 +123,18 @@ def make_config(config_file: str, log: logging.Logger) -> None:
     cwd: str = os.getcwd()
     config: configparser.ConfigParser = configparser.ConfigParser()
     config["AoU"] = {
-        "awardee": "<YourNameHere>",
+        "awardee": DUMMY,
         "endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite",
     }
     config["InSite API"] = {
         "data_directory": cwd,
     }
     config["Logon"] = {
-        "aou_service_account": r"awardee-california@all-of-us-ops-data-api-prod.iam.gservice"
+        "aou_service_account": r"awardee-"
+        + DUMMY
+        + r"@all-of-us-ops-data-api-prod.iam.gservice"
         r"account.com",
-        "pmi_account": "my.name@pmi-ops.org",
+        "pmi_account": DUMMY + "@pmi-ops.org",
         "project": "all-of-us-ops-data-api-prod",
         "token_file": os.path.join(cwd, "key.json"),
     }

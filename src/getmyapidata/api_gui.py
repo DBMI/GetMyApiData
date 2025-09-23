@@ -5,9 +5,10 @@ from collections.abc import Callable
 from configparser import ConfigParser
 from tkinter import filedialog
 
+import common
 import wx
 import wx.adv
-from common import get_exe_version, update_config
+from common import ensure_path_exists, get_exe_version, update_config
 from convert_to_hp_format import HealthProConverter
 from gcloud_tools import GCloudTools, gcloud_tools_installed
 from insite_api import InSiteAPI
@@ -76,7 +77,7 @@ class ApiGui(wx.Dialog):
         grid.AddGrowableCol(idx=1, proportion=1)
 
         # AWARDEE
-        self.__awardee_text_ctrl = self.__add_controls(
+        self.__add_controls(
             1,
             my_panel,
             grid,
@@ -87,7 +88,7 @@ class ApiGui(wx.Dialog):
         )
 
         # PROJECT NAME
-        self.__project_text_ctrl = self.__add_controls(
+        self.__add_controls(
             2,
             my_panel,
             grid,
@@ -98,7 +99,7 @@ class ApiGui(wx.Dialog):
         )
 
         # PMI OPS ACCOUNT
-        self.__pmi_account_text_ctrl = self.__add_controls(
+        self.__add_controls(
             3,
             my_panel,
             grid,
@@ -109,7 +110,7 @@ class ApiGui(wx.Dialog):
         )
 
         # AOU SERVICE ACCOUNT
-        self.__aou_account_text_ctrl = self.__add_controls(
+        self.__add_controls(
             4,
             my_panel,
             grid,
@@ -120,7 +121,7 @@ class ApiGui(wx.Dialog):
         )
 
         # LOCATION OF TOKEN FILE
-        self.__token_file_text_ctrl = self.__add_controls(
+        self.__add_controls(
             5,
             my_panel,
             grid,
@@ -158,6 +159,7 @@ class ApiGui(wx.Dialog):
             self.__ok_button: wx.Button = wx.Button(
                 my_panel, id=wx.ID_ANY, label="Request Data", style=wx.BORDER_SUNKEN
             )
+            self.__enable_if_inputs_complete()
             grid.Add(self.__ok_button, pos=(8, 0), flag=wx.ALL, border=5)
             self.__ok_button.Bind(wx.EVT_BUTTON, self.__on_ok_clicked)
         else:
@@ -191,6 +193,9 @@ class ApiGui(wx.Dialog):
 
         # Connect grid sizer to panel.
         my_panel.SetSizerAndFit(grid)
+
+        # POP-UP MENU
+        my_panel.Bind(wx.EVT_RIGHT_DOWN, self.__on_show_menu)
 
         # Finish at Frame level.
         sizer.Add(my_panel, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
@@ -230,16 +235,15 @@ class ApiGui(wx.Dialog):
 
     def __enable_if_inputs_complete(self) -> None:
         if (
-            self.__aou_service_account
-            and self.__pmi_account
-            and self.__project
-            and self.__token_file
-            and os.path.isfile(self.__token_file)
+            self.__input_ok(self.__aou_service_account)
+            and self.__input_ok(self.__pmi_account)
+            and self.__input_ok(self.__project)
+            and self.__input_ok(self.__token_file)
+            and ensure_path_exists(self.__token_file, self.__log)
         ):
             self.__ok_button.Enable()
         else:
-            # self.__ok_button.Disable()
-            self.__ok_button.Enable()
+            self.__ok_button.Disable()
 
     def __get_data(self) -> None:
         self.__set_status("Calling GCloudTools...")
@@ -249,6 +253,7 @@ class ApiGui(wx.Dialog):
             aou_service_account=self.__aou_service_account,
             token_file=self.__token_file,
             log_directory=self.__config["Logs"]["log_directory"],
+            log_level=self.__log.getEffectiveLevel(),
             status_fn=self.__set_status,
         )
         self.__set_status("Requesting token...")
@@ -260,9 +265,9 @@ class ApiGui(wx.Dialog):
             log_directory=self.__config["Logs"]["log_directory"],
             progress_fn=self.__set_progress,
             status_fn=self.__set_status,
+            log_level=self.__log.getEffectiveLevel(),
         )
         self.__set_status("Requesting InSiteAPI data...")
-
         data: dict = api_mgr.request_data(
             awardee=self.__config["AoU"]["awardee"],
             endpoint=self.__config["AoU"]["endpoint"],
@@ -281,13 +286,14 @@ class ApiGui(wx.Dialog):
         self.__set_progress(0)
 
         # Convert to HealthPro format.
+        self.__set_status("Converting to HealthPro format.")
         hp_converter: HealthProConverter = HealthProConverter(
             log_directory=self.__config["Logs"]["log_directory"],
             data_directory=data_directory,
             status_fn=self.__set_status,
         )
         hp_converter.convert()
-        self.__set_status("Complete.")
+        self.__set_status(f"Complete. Results in {data_directory}.")
 
     def __get_destination_directory(self) -> str:
         initial_dir: str
@@ -309,6 +315,28 @@ class ApiGui(wx.Dialog):
 
         return directory_path
 
+    def __input_ok(self, input_value: str) -> bool:
+        if input_value:
+            self.__log.debug(f"Input not null: {input_value}")
+        else:
+            self.__log.debug("Input is null.")
+
+        if  input_value.isspace():
+            self.__log.debug("Input is blank.")
+        else:
+            self.__log.debug(f"Input not whitespace: {input_value}")
+
+        if input_value.__contains__(common.DUMMY):
+            self.__log.debug(f"Input has dummy value: {input_value}")
+        else:
+            self.__log.debug(f"Input does not contain dummy: {input_value}")
+
+        return (
+                input_value
+                and not input_value.isspace()
+                and not input_value.__contains__(common.DUMMY)
+        )
+
     def __on_aou_service_account_text_changed(self, event: wx.EVT_TEXT):
         text_ctrl_source: wx.TextCtrl = event.GetEventObject()
         self.__aou_service_account = text_ctrl_source.GetValue()
@@ -329,9 +357,6 @@ class ApiGui(wx.Dialog):
 
     def __on_ok_clicked(self, event) -> None:
         self.__ok_button.Disable()
-
-        # Scrape the gui & get all control values.
-        self.__scrape_gui()
 
         # Update config file.
         self.__config["Logon"]["aou_service_account"] = self.__aou_service_account
@@ -395,6 +420,23 @@ class ApiGui(wx.Dialog):
         text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
         text_ctrl.SetValue(self.__config["Logon"]["token_file"])
         button.Disable()
+
+    def __on_show_menu(self, event: wx.EVT_MENU) -> None:
+        menu: wx.Menu = wx.Menu()
+        item1: wx.MenuItem = menu.Append(wx.ID_ANY, "Set logging level: INFO")
+        item2: wx.MenuItem = menu.Append(wx.ID_ANY, "Set logging level: DEBUG")
+        self.Bind(wx.EVT_MENU, self.__on_menu_select, item1)
+        self.Bind(wx.EVT_MENU, self.__on_menu_select, item2)
+        self.PopupMenu(menu, event.GetPosition())
+        menu.Destroy()
+
+    def __on_menu_select(self, event: wx.EVT_MENU) -> None:
+        event_label: str = event.GetEventObject().GetLabel(event.GetId())
+
+        if event_label.__contains__("INFO"):
+            self.__log.setLevel(logging.INFO)
+        elif event_label.__contains__("DEBUG"):
+            self.__log.setLevel(logging.DEBUG)
 
     def __on_token_file_text_changed(self, event: wx.EVT_TEXT) -> None:
         text_ctrl_source: wx.TextCtrl = event.GetEventObject()

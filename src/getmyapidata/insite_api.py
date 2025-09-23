@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import List, Union
 
 import requests
-
 from my_logging import setup_logging
 
 
@@ -58,6 +57,7 @@ class InSiteAPI(object):
         log_directory: str,
         progress_fn: Callable = None,
         status_fn: Callable = None,
+        log_level: Union[int, str] = "INFO",
     ):
         """Instantiate an InSiteAPI object.
 
@@ -74,6 +74,7 @@ class InSiteAPI(object):
                 "insite_api.log",
             )
         )
+        self.__log.setLevel(log_level)
 
         # Variables developed in request_list() to be used in output_data().
         self.__official_header: list = []
@@ -106,10 +107,11 @@ class InSiteAPI(object):
             csv_filepath = os.path.join(
                 data_directory, organization + "_participant_list.csv"
             )
-            self.__log.info(f"Writing to {csv_filepath}")
 
             if self.__status_fn is not None:
                 self.__status_fn(f"Writing to {csv_filepath}")
+            else:
+                self.__log.info(f"Writing to {csv_filepath}")
 
             with open(csv_filepath, "w", newline="", encoding="utf-8") as file:
                 writer: csv.writer = csv.writer(file)
@@ -162,14 +164,20 @@ class InSiteAPI(object):
         next_url: Union[
             str, None
         ] = f"{endpoint}?_sort=lastModified&_includeTotal=TRUE&_count={num_rows_per_page}&awardee={awardee}"
+        self.__log.debug(f"next_url: {next_url}")
+
         total_records: int = 0
-        total_available_records: int = 65000
+        total_available_records: int = (
+            65000  # Default big number. We'll set it later using the API response.
+        )
 
         while next_url:
             if max_pages is not None:
+                self.__log.debug("Max pages set = -1")
                 max_pages -= 1
 
             if max_pages is not None and max_pages < 0:
+                self.__log.debug(f"Max pages set to {max_pages}.")
                 break
 
             num_attempts: int = 0
@@ -188,7 +196,7 @@ class InSiteAPI(object):
                     )
 
                     if num_attempts < 2:
-                        self.__log.error(f"Pausing for another try.")
+                        self.__log.debug(f"Pausing for another try.")
                         time.sleep(30)
                         resp: requests.Response = requests.get(
                             next_url, headers=headers
@@ -254,8 +262,8 @@ class InSiteAPI(object):
                 if next_url_info["relation"] == "next":
                     next_url = next_url_info["url"]
 
-                self.__log.info("------------------")
-                self.__log.info(next_url)
+                self.__log.debug("------------------")
+                self.__log.debug(next_url)
             except KeyError:
                 self.__log.error("Key error")
                 pass
