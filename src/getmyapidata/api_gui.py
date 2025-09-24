@@ -8,7 +8,7 @@ from tkinter import filedialog
 import common
 import wx
 import wx.adv
-from common import ensure_path_exists, get_exe_version, update_config
+from common import ensure_path_possible, get_exe_version, update_config
 from convert_to_hp_format import HealthProConverter
 from gcloud_tools import GCloudTools, gcloud_tools_installed
 from insite_api import InSiteAPI
@@ -239,7 +239,7 @@ class ApiGui(wx.Dialog):
             and self.__input_ok(self.__pmi_account)
             and self.__input_ok(self.__project)
             and self.__input_ok(self.__token_file)
-            and ensure_path_exists(self.__token_file, self.__log)
+            and ensure_path_possible(self.__token_file, self.__log)
         ):
             self.__ok_button.Enable()
         else:
@@ -321,7 +321,7 @@ class ApiGui(wx.Dialog):
         else:
             self.__log.debug("Input is null.")
 
-        if  input_value.isspace():
+        if input_value.isspace():
             self.__log.debug("Input is blank.")
         else:
             self.__log.debug(f"Input not whitespace: {input_value}")
@@ -332,9 +332,9 @@ class ApiGui(wx.Dialog):
             self.__log.debug(f"Input does not contain dummy: {input_value}")
 
         return (
-                input_value
-                and not input_value.isspace()
-                and not input_value.__contains__(common.DUMMY)
+            input_value
+            and not input_value.isspace()
+            and not input_value.__contains__(common.DUMMY)
         )
 
     def __on_aou_service_account_text_changed(self, event: wx.EVT_TEXT):
