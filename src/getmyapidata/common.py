@@ -9,23 +9,32 @@ from pathlib import Path
 
 import win32api
 
+# String we insert into config file & GUI entries.
 DUMMY: str = "<YourNameHere>"
 
 
-def ensure_path_exists(filename: str, log: logging.Logger) -> bool:
+def ensure_path_possible(filename: str, log: logging.Logger) -> bool:
     log.debug(f"Checking path '{filename}' exists.")
     directory_name: str = os.path.dirname(filename)
     log.debug(f"Checking directory '{directory_name}' exists.")
     directory_path = Path(directory_name)
 
+    # Does this directory already exist?
+    if os.path.exists(directory_path):
+        return True
+
     try:
         directory_path.mkdir(parents=True, exist_ok=True)
         log.debug(f"Directory '{directory_name}' created.")
+
+        # OK, we CAN create it, so now delete it.
+        # (Helps when we're calling this method with every new
+        os.rmdir(directory_name)
+        return True
     except OSError as e:
         log.error(f"Error ensuring directory '{directory_name} because: {e}")
         print(f"Error ensuring directory '{directory_name}': {e}")
-
-    return os.path.exists(directory_name)
+        return False
 
 
 def get_args(local_args: Callable) -> argparse.Namespace:
