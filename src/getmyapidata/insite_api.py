@@ -278,8 +278,8 @@ class InSiteAPI:
         data: dict = {}
 
         next_url: Union[str, None] = (
-            f"{aou_package.endpoint()}?_sort=lastModified&_includeTotal=TRUE"
-            f"&_count={num_rows_per_page}&awardee={aou_package.awardee()}"
+            f"{aou_package.endpoint}?_sort=lastModified&_includeTotal=TRUE"
+            f"&_count={num_rows_per_page}&awardee={aou_package.awardee}"
         )
         self.__log.debug("next_url: %s", next_url)
 
