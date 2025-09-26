@@ -9,8 +9,7 @@ from collections.abc import Callable
 import numpy as np
 import pandas
 
-from src.getmyapidata.my_logging import \
-    setup_logging  # pylint: disable=import-error
+from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
 
 
 # UTILITY CLASS
