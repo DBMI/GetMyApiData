@@ -205,10 +205,10 @@ class GCloudTools:
 
         command: str = (
             f"gcloud -q iam service-accounts keys create "
-            f"--account {self.__aou_package.pmi_account()} "
-            f"--project {self.__aou_package.project()} "
-            f"--iam-account {self.__aou_package.aou_service_account()} "
-            f"{self.__aou_package.token_file()}"
+            f"--account {self.__aou_package.pmi_account} "
+            f"--project {self.__aou_package.project} "
+            f"--iam-account {self.__aou_package.aou_service_account} "
+            f"{self.__aou_package.token_file}"
         )
         results_list: list[str] = getoutput(command)
         results: str = results_list[0]
