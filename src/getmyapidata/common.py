@@ -1,19 +1,29 @@
-import argparse
-import configparser
+"""
+Collection of static utility methods.
+"""
 import logging
 import os
 import re
 import sys
-from collections.abc import Callable
 from pathlib import Path
 
+import pywintypes
 import win32api
-
-# String we insert into config file & GUI entries.
-DUMMY: str = "<YourNameHere>"
 
 
 def ensure_path_possible(filename: str, log: logging.Logger) -> bool:
+    """
+    Tests to ensure the filename provided can actually be created.
+
+    Parameters
+    ----------
+    filename: str           File we propose to create
+    log: logging.Logger     To assist in debugging
+
+    Returns
+    -------
+    bool
+    """
     log.debug(f"Checking path '{filename}' exists.")
     directory_name: str = os.path.dirname(filename)
     log.debug(f"Checking directory '{directory_name}' exists.")
@@ -37,52 +47,32 @@ def ensure_path_possible(filename: str, log: logging.Logger) -> bool:
         return False
 
 
-def get_args(local_args: Callable) -> argparse.Namespace:
-    parser: argparse.ArgumentParser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-c",
-        "--config",
-        help="read config from this file",
-        default=get_default_ini_path(),
-    )
-    local_args(parser)
-    args: argparse.Namespace = parser.parse_args()
-    return args
-
-
 def get_base_path() -> str:
+    """
+    Adapts to running either in development OR in executable format.
+
+    Returns
+    -------
+    base_path: str      Where to find included data or image files.
+    """
     base_path: str
 
     if getattr(sys, "frozen", False):
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS  # pylint: disable=W0212
     else:
         base_path = os.path.dirname(os.path.abspath(__file__))
 
     return base_path
 
 
-def get_config(
-    args: argparse.Namespace, log: logging.Logger
-) -> configparser.ConfigParser:
-    config_file: str = get_default_ini_path()
-    log.info(f"Reading config from {config_file}.")
-
-    if not os.path.isfile(config_file):
-        log.info(f"Config file {config_file} not found.")
-        make_config(config_file, log)
-
-    config = configparser.ConfigParser(
-        interpolation=configparser.ExtendedInterpolation()
-    )
-    config.read(config_file)
-    return config
-
-
-def get_default_ini_path() -> str:
-    return str(os.path.join(os.getcwd(), "config.ini"))
-
-
 def get_exe_path() -> str:
+    """
+    Where to look for the .exe file information
+
+    Returns
+    -------
+    exe_path: str
+    """
     exe_path: str
 
     if getattr(sys, "frozen", False):
@@ -94,31 +84,42 @@ def get_exe_path() -> str:
 
 
 def get_exe_version(log: logging.Logger) -> str:
+    """
+    Get the version of the executable, either from the .exe OR the version.txt files.
+
+    Parameters
+    ----------
+    log
+
+    Returns
+    -------
+    version: str
+    """
     exe_path: str = get_exe_path()
-    log.info("Found exe path: {exe_path}.")
+    log.debug("Found exe path: {exe_path}.")
 
     try:
         # Get the full path to the executable.
-        log.info(f"Getting abspath from {exe_path}.")
+        log.debug(f"Getting abspath from {exe_path}.")
         full_path = os.path.abspath(exe_path)
 
         # Get the file version information.
-        log.info(f"Requesting version info from {full_path}.")
+        log.debug(f"Requesting version info from {full_path}.")
         info = win32api.GetFileVersionInfo(full_path, "\\")
-        log.info(f"Version info: {info}.")
+        log.debug(f"Version info: {info}.")
 
         # Extract the major, minor, build, and private parts of the version.
         ms = info["FileVersionMS"]
         ls = info["FileVersionLS"]
 
-        version = "%d.%d.%d.%d" % (
-            win32api.HIWORD(ms),
-            win32api.LOWORD(ms),
-            win32api.HIWORD(ls),
-            win32api.LOWORD(ls),
+        version = (
+            f"{win32api.HIWORD(ms)}."
+            f"{win32api.LOWORD(ms)}."
+            f"{win32api.HIWORD(ls)}."
+            f"{win32api.LOWORD(ls)}"
         )
         return version
-    except Exception as e:
+    except pywintypes.error as e:  # pylint: disable=no-member
         ver_from_file: str = parse_version_file()
 
         if ver_from_file:
@@ -128,38 +129,19 @@ def get_exe_version(log: logging.Logger) -> str:
         return ""
 
 
-def make_config(config_file: str, log: logging.Logger) -> None:
-    cwd: str = os.getcwd()
-    config: configparser.ConfigParser = configparser.ConfigParser()
-    config["AoU"] = {
-        "awardee": DUMMY,
-        "endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite",
-    }
-    config["InSite API"] = {
-        "data_directory": cwd,
-    }
-    config["Logon"] = {
-        "aou_service_account": r"awardee-"
-        + DUMMY
-        + r"@all-of-us-ops-data-api-prod.iam.gservice"
-        r"account.com",
-        "pmi_account": DUMMY + "@pmi-ops.org",
-        "project": "all-of-us-ops-data-api-prod",
-        "token_file": os.path.join(cwd, "key.json"),
-    }
-    config["Logs"] = {"log_directory": cwd}
-
-    with open(config_file, "w") as configfile:
-        log.info(f"Writing config to file {config_file}.")
-        config.write(configfile)
-
-
 def parse_version_file() -> str:
+    """
+    Parse the version file to extract the ProductVersion string.
+
+    Returns
+    -------
+    version: str
+    """
     file_path: str = resource_path("version_info.txt")
 
     with open(file_path, "r", encoding="utf-8") as version_file:
         file_content = version_file.read()
-        pattern: str = "ProductVersion',\s'(?P<version>\d+\.\d+)"
+        pattern: str = r"ProductVersion',\s'(?P<version>\d+\.\d+)"
         match = re.search(pattern, file_content)
 
         if match:
@@ -170,16 +152,21 @@ def parse_version_file() -> str:
 
 # https://stackoverflow.com/a/13790741/20241849
 def resource_path(relative_path: str) -> str:
-    """Get absolute path to resource, works for dev and PyInstaller."""
+    """
+    Given name of resource, builds absolute path to resource, works for dev and PyInstaller.
+
+    Parameters
+    ----------
+    relative_path: str
+
+    Returns
+    -------
+    base_path: str
+    """
     if getattr(sys, "frozen", False):
         # Running in a PyInstaller bundle.
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS  # pylint: disable=W0212
     else:
         # Running in a normal Python environment.
         base_path = os.getcwd()
     return str(os.path.join(base_path, relative_path))
-
-
-def update_config(config: configparser.ConfigParser) -> None:
-    with open(get_default_ini_path(), "w") as configfile:
-        config.write(configfile)

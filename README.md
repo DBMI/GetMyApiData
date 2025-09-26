@@ -1,5 +1,6 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![Last Commit Date](./last-commit-badge.svg?dummy=8484744)
+![Pylint](./.github/badges/pylint-badge.svg?dummy=8484744)
+![Last Commit Date](./.github/badges/last-commit-badge.svg?dummy=8484744)
 
 ## Get My API Data
 A GUI tool for querying All of Us participant data using the InSite API.

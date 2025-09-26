@@ -1,0 +1,6 @@
+[MASTER]
+extension-pkg-whitelist=pywintypes
+
+[MESSAGES CONTROL]
+extension-pkg-allow-list=win32api
+generated-members = wx.*

@@ -1,3 +1,6 @@
+"""
+Contains class GCLoudTools & associated static methods for GCloud authentication.
+"""
 import logging
 import os
 import subprocess
@@ -6,28 +9,48 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Union
 
-from my_logging import setup_logging
+from src.getmyapidata.aou_package import AouPackage
+from src.getmyapidata.my_logging import \
+    setup_logging  # pylint: disable=import-error
 
 
 def gcloud_tools_installed() -> bool:
+    """
+    Tests to see if we can make the simplest gcloud call.
+
+    Returns
+    -------
+    installed: bool         Is gcloud toolkit installed?
+    """
     installed: bool = False
 
     try:
         # Execute the command and display output directly to console
         subprocess.run("gcloud version", shell=True, check=True)
         installed: bool = True
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print("Gcloud command-line tools are not installed.")
 
     return installed
 
 
-def getoutput(command) -> list[str]:
-    """Execute a shell command and return the output as a list of strings."""
+def getoutput(cmd: str) -> list[str]:
+    """
+    Execute a shell command and return the output as a list of strings.
+
+    Parameters
+    ----------
+    cmd: str
+
+    Returns
+    -------
+    output: str
+    """
+
     try:
         # Execute the command, capture the output
         output = subprocess.check_output(
-            command, shell=True, stderr=subprocess.STDOUT, text=True
+            cmd, shell=True, stderr=subprocess.STDOUT, text=True
         )
         # Split the output into lines and return as a list
         return output.strip().split("\n")
@@ -36,16 +59,28 @@ def getoutput(command) -> list[str]:
         return e.output.strip().split("\n")
 
 
-def system(command) -> None:
-    """Execute a shell command, displaying the output directly to the console."""
+def system(cmd: str) -> None:
+    """
+    Execute a shell command, displaying the output directly to the console.
+
+    Parameters
+    ----------
+    cmd: str
+
+    Returns
+    -------
+    None
+    """
+
     try:
-        # Execute the command and display output directly to console
-        subprocess.run(command, shell=True, check=True)
+        # Execute the command and display output directly to console.
+        subprocess.run(cmd, shell=True, check=True)
     except subprocess.CalledProcessError as e:
         # Print error message if command execution fails
         print(f"Command failed with return code {e.returncode}")
 
 
+# pylint: disable=too-few-public-methods)
 class GCloudTools:
     """
     Takes care of gcloud authentication, tokens, etc.
@@ -56,16 +91,12 @@ class GCloudTools:
 
     Methods
     -------
-
+    get_token() -> str
     """
 
     def __init__(
         self,
-        pmi_account: str,
-        project: str,
-        aou_service_account: str,
-        token_file: str,
-        log_directory: str,
+        aou_package: AouPackage,
         log_level: Union[int, str] = "INFO",
         status_fn: Callable = None,
     ):
@@ -74,11 +105,7 @@ class GCloudTools:
 
         Parameters
         ----------
-        pmi_account : str           pmi account of user
-        project : str               project name
-        aou_service_account : str   pmi service account
-        token_file : str            full path to token file
-        log_directory : str         log directory
+        aou_package : AouPackage
         log_level: Union[int, str]  Optional log level
         status_fn : callable        Optional external fn to report status
         Return
@@ -86,21 +113,18 @@ class GCloudTools:
         none; Instantiates object
         """
 
+        self.__aou_package: AouPackage = aou_package
         self.__log: logging.Logger = setup_logging(
             log_filename=os.path.join(
-                log_directory,
+                self.__aou_package.log_directory(),
                 "gcloud_tools.log",
             )
         )
         self.__log.setLevel(log_level)
-        self.__pmi_account: str = pmi_account
-        self.__project: str = project
-        self.__service_account: str = aou_service_account
-        self.__token_file: str = token_file
         self.__status_fn: Callable = status_fn
 
         # Ensure the path to the token file exists.
-        file_path: Path = Path(self.__token_file)
+        file_path: Path = Path(self.__aou_package.token_file())
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Automatically prepare key file & activate account.
@@ -127,7 +151,7 @@ class GCloudTools:
             self.__log.info("Activating the service account...")
 
         system(
-            f"gcloud -q auth activate-service-account --key-file={self.__token_file}"
+            f"gcloud -q auth activate-service-account --key-file={self.__aou_package.token_file()}"
         )
 
     def __auth(self) -> None:
@@ -144,8 +168,11 @@ class GCloudTools:
         else:
             self.__log.info("Authorizing via GCloud...")
 
-        command: str = f"gcloud -q auth application-default login --impersonate-service-account {self.__service_account}"
-        results_list: list = getoutput(command)
+        cmd: str = (
+            f"gcloud -q auth application-default login"
+            f"--impersonate-service-account {self.__aou_package.aou_service_account()}"
+        )
+        results_list: list[str] = getoutput(cmd)
 
         if not results_list or len(results_list) < 6:
             if self.__status_fn is not None:
@@ -159,7 +186,7 @@ class GCloudTools:
         if not results.startswith("Credentials saved"):
             if self.__status_fn is not None:
                 self.__status_fn(f"Unable to login: {results}")
-            self.__log.exception(f"Unable to login: {results}")
+            self.__log.exception("Unable to login: %s", results)
             raise RuntimeError(f"Unable to login: {results}")
 
     def __create_key_file(self) -> None:
@@ -177,17 +204,20 @@ class GCloudTools:
             self.__log.info("Creating key file...")
 
         command: str = (
-            f"gcloud -q iam service-accounts keys create --account {self.__pmi_account} --project {self.__project} --iam-account {self.__service_account} "
-            + self.__token_file
+            f"gcloud -q iam service-accounts keys create "
+            f"--account {self.__aou_package.pmi_account()} "
+            f"--project {self.__aou_package.project()} "
+            f"--iam-account {self.__aou_package.aou_service_account()} "
+            f"{self.__aou_package.token_file()}"
         )
-        results_list: list = getoutput(command)
+        results_list: list[str] = getoutput(command)
         results: str = results_list[0]
 
         if not results.startswith("created key"):
             if self.__status_fn is not None:
                 self.__status_fn(f"Unable to create key file: {results}")
 
-            self.__log.exception(f"Unable to create key file: {results}")
+            self.__log.exception("Unable to create key file: %s", results)
             raise RuntimeError(f"Unable to create key file: {results}")
 
     def get_token(self) -> str:
@@ -203,7 +233,7 @@ class GCloudTools:
         else:
             self.__log.info("Reading key file...")
 
-        token: list = getoutput("gcloud -q auth print-access-token")
+        token: list[str] = getoutput("gcloud -q auth print-access-token")
 
         if token:
             token_payload: str = token[0]
@@ -212,7 +242,7 @@ class GCloudTools:
                 if self.__status_fn is not None:
                     self.__status_fn(f"Authentication Token Error: {token_payload}")
 
-                self.__log.exception(f"Authentication Token Error: {token_payload}")
+                self.__log.exception("Authentication Token Error: %s", token_payload)
                 raise RuntimeError(f"Authentication Token Error: {token_payload}")
         else:
             if self.__status_fn is not None:

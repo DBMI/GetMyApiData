@@ -1,32 +1,60 @@
+"""
+Contains InSiteAPI class.
+"""
 import csv
 import logging
-import math
 import os
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 
 import requests
-from my_logging import setup_logging
+
+from src.getmyapidata.aou_package import AouPackage
+from src.getmyapidata.my_logging import \
+    setup_logging  # pylint: disable=import-error
+from src.getmyapidata.progress import Progress
 
 
 def join_headers(h1: list, h2: list) -> list:
+    """
+    Joins two lists into one list.
+
+    Parameters
+    ----------
+    h1: list
+    h2: list
+
+    Returns
+    -------
+    combined: list
+    """
     if h1 is None:
         if h2 is None:
             return []
-        else:
-            return h2
+        return h2
     if h2 is None:
         return h1
 
-    set1 = set(h1)
-    set2 = set(h2)
-    combined = set1 | set2
+    set1: set = set(h1)
+    set2: set = set(h2)
+    combined: set = set1 | set2
     return list(combined)
 
 
 def make_header(dict1: dict) -> list:
+    """
+    Turns a dictionary keys into a header list.
+
+    Parameters
+    ----------
+    dict1: dict
+
+    Returns
+    -------
+    list
+    """
     ret = []
 
     for key in dict1.keys():
@@ -35,7 +63,7 @@ def make_header(dict1: dict) -> list:
     return ret
 
 
-class InSiteAPI(object):
+class InSiteAPI:
     """
     An interface with the AwardeeInSite API
 
@@ -83,6 +111,9 @@ class InSiteAPI(object):
         self.__progress_fn: Callable = progress_fn
         self.__status_fn: Callable = status_fn
 
+        # Status
+        self.__progress: Progress = Progress()
+
     def output_data(self, data: dict, data_directory: str) -> None:
         """
         Produces .csv files from extracted data.
@@ -111,7 +142,7 @@ class InSiteAPI(object):
             if self.__status_fn is not None:
                 self.__status_fn(f"Writing to {csv_filepath}")
             else:
-                self.__log.info(f"Writing to {csv_filepath}")
+                self.__log.info("Writing to %s", csv_filepath)
 
             with open(csv_filepath, "w", newline="", encoding="utf-8") as file:
                 writer: csv.writer = csv.writer(file)
@@ -131,10 +162,96 @@ class InSiteAPI(object):
 
                     writer.writerow(line)
 
+    def __report_progress(
+        self,
+        num_new_records: int,
+    ) -> None:
+        """
+        Takes care of logging & external status functions.
+
+        Parameters
+        ----------
+        num_new_records: int
+        """
+        self.__progress.increment(num_new_records)
+        self.__log.info(
+            (
+                "Success: retrieved %d records. Total records: %d",
+                num_new_records,
+                self.__progress.num_complete(),
+            )
+        )
+
+        if self.__progress_fn is not None:
+            self.__progress_fn(self.__progress.percent_complete())
+
+    def __request_response(self, next_url: Union[str, None], headers: dict) -> dict:
+        """
+        Handles the http request, retries, etc.
+
+        Parameters
+        ----------
+        next_url: URL of request
+        headers: list
+
+        Returns
+        -------
+        ps_data: dict of retrieved data
+        """
+        num_attempts: int = 0
+        ps_data: dict = {}
+
+        resp: requests.Response = requests.get(next_url, headers=headers, timeout=30)
+
+        while True:
+            status_code: str = str(resp.status_code) if resp else "Unknown status"
+
+            if resp and resp.status_code == 200:
+                ps_data = resp.json()
+
+                if (
+                    "resourceType" not in ps_data
+                    or ps_data["resourceType"] != "Bundle"
+                    or "entry" not in ps_data
+                ):
+                    self.__log.error("No bundle")
+
+                break
+
+            if not resp or resp.status_code == 500:
+                # Server error. Pause & try again.
+                num_attempts += 1
+                self.__log.error(
+                    "Server error: %s. Have made %d attempts.",
+                    status_code,
+                    num_attempts,
+                )
+
+                if num_attempts < 2:
+                    self.__log.debug("Pausing for another try.")
+                    time.sleep(30)
+                    resp: requests.Response = requests.get(
+                        next_url, headers=headers, timeout=60
+                    )
+                else:
+                    self.__log.error("Exiting.")
+                    raise RuntimeError(
+                        (
+                            f"Server error: {status_code}. "
+                            f"Have made {num_attempts} attempts. Exiting."
+                        )
+                    )
+            else:
+                resp_text: str = resp.text if resp else "Unknown error"
+                self.__log.error("Error: api request failed.\n\n%s.", resp_text)
+                self.__log.error(status_code)
+                raise RuntimeError(f"Server error: {status_code}. Exiting.")
+
+        return ps_data
+
     def request_data(
         self,
-        awardee: str,
-        endpoint: str,
+        aou_package: AouPackage,
         token: str,
         max_pages: Union[int, None] = None,
         num_rows_per_page: Union[int, None] = 1000,
@@ -144,8 +261,7 @@ class InSiteAPI(object):
 
         Parameters
         ----------
-        awardee: str
-        endpoint: str
+        aou_package: AouPackage     Contains the token file name, awardee & endpoint info
         token: str
         num_rows_per_page: int      Optional (default: 1000)
         max_pages: int              Optional (default: None)
@@ -156,20 +272,16 @@ class InSiteAPI(object):
         """
         headers: dict = {
             "content-type": "application/json",
-            "Authorization": "Bearer {0}".format(token),
+            "Authorization": f"Bearer {token}",
         }
 
         data: dict = {}
 
-        next_url: Union[
-            str, None
-        ] = f"{endpoint}?_sort=lastModified&_includeTotal=TRUE&_count={num_rows_per_page}&awardee={awardee}"
-        self.__log.debug(f"next_url: {next_url}")
-
-        total_records: int = 0
-        total_available_records: int = (
-            65000  # Default big number. We'll set it later using the API response.
+        next_url: Union[str, None] = (
+            f"{aou_package.endpoint()}?_sort=lastModified&_includeTotal=TRUE"
+            f"&_count={num_rows_per_page}&awardee={aou_package.awardee()}"
         )
+        self.__log.debug("next_url: %s", next_url)
 
         while next_url:
             if max_pages is not None:
@@ -177,67 +289,15 @@ class InSiteAPI(object):
                 max_pages -= 1
 
             if max_pages is not None and max_pages < 0:
-                self.__log.debug(f"Max pages set to {max_pages}.")
+                self.__log.debug("Max pages set to %d.", max_pages)
                 break
 
-            num_attempts: int = 0
-            resp: requests.Response = requests.get(next_url, headers=headers)
+            ps_data: dict = self.__request_response(next_url, headers)
 
-            while True:
-                status_code: str = str(resp.status_code) if resp else "Unknown status"
+            if "total" in ps_data and not self.__progress.is_set():
+                self.__progress.set(ps_data["total"])
 
-                if resp and resp.status_code == 200:
-                    break
-                elif not resp or resp.status_code == 500:
-                    # Server error. Pause & try again.
-                    num_attempts += 1
-                    self.__log.error(
-                        f"Server error: {status_code}. Have made {num_attempts} attempts."
-                    )
-
-                    if num_attempts < 2:
-                        self.__log.debug(f"Pausing for another try.")
-                        time.sleep(30)
-                        resp: requests.Response = requests.get(
-                            next_url, headers=headers
-                        )
-                    else:
-                        self.__log.error(f"Exiting.")
-                        raise RuntimeError(
-                            f"Server error: {status_code}. Have made {num_attempts} attempts. Exiting."
-                        )
-                else:
-                    self.__log.error(
-                        "Error: api request failed.\n\n{0}.".format(
-                            resp.text if resp else "Unknown error"
-                        )
-                    )
-                    self.__log.error(status_code)
-                    raise RuntimeError(f"Server error: {status_code}. Exiting.")
-
-            ps_data: dict = resp.json()
-
-            if (
-                "resourceType" not in ps_data
-                or ps_data["resourceType"] != "Bundle"
-                or "entry" not in ps_data
-            ):
-                self.__log.error("No bundle")
-
-            if "total" in ps_data:
-                total_available_records = ps_data["total"]
-
-            num_new_records: int = len(ps_data["entry"])
-            total_records += num_new_records
-            self.__log.info(
-                f"Success: retrieved {num_new_records} records.  Total records: {total_records}"
-            )
-
-            if self.__progress_fn is not None:
-                self.__progress_fn(
-                    math.trunc(100 * total_records / total_available_records)
-                )
-
+            self.__report_progress(len(ps_data["entry"]))
             next_url = None
 
             for entry in ps_data["entry"]:
@@ -266,6 +326,5 @@ class InSiteAPI(object):
                 self.__log.debug(next_url)
             except KeyError:
                 self.__log.error("Key error")
-                pass
 
         return data
