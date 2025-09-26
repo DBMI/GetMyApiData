@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "getmyapidata"
-version = "0.1.7"
+version = "0.2.0"
 description = "A GUI-based tool to retrieve All of Us participant data using the InSite API."
 authors = ["Kevin J. Delaney <kjdelaney@ucsd.edu>, Brian E. Fox, <befox@ucsd.edu>"]
 license = """
@@ -74,3 +74,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 getmyapidata = "src.__main__:main"
+
+[tool.pylint.main]
+extra-paths=["/src/getmyapidata/"]

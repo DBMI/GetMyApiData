@@ -1,17 +1,15 @@
-import argparse
+"""
+Main routine--creates API GUI.
+"""
 import logging
 import os
 
 import wx.adv
-from api_gui import ApiGui
-from common import get_args, get_config, resource_path
-from my_logging import setup_logging
-from splash import MySplashScreen
 
-
-def get_local_args(parser: argparse.ArgumentParser) -> None:
-    pass
-
+from src.getmyapidata.api_gui import ApiGui
+from src.getmyapidata.common import resource_path
+from src.getmyapidata.my_logging import setup_logging
+from src.getmyapidata.splash import MySplashScreen
 
 if __name__ == "__main__":
 
@@ -25,14 +23,9 @@ if __name__ == "__main__":
     splash.Show()
     app.Yield()
 
-    log.info("Getting arguments.")
-    args: argparse.Namespace = get_args(get_local_args)
-    log.info("Getting config.")
-    myconfig = get_config(args, log)
-
     # Create the GUI.
     log.info("Instantiating ApiGui object.")
-    gui: ApiGui = ApiGui(myconfig)
+    gui: ApiGui = ApiGui()
 
     try:
         splash.Destroy()
