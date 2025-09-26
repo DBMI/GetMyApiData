@@ -10,8 +10,7 @@ from pathlib import Path
 from typing import Union
 
 from src.getmyapidata.aou_package import AouPackage
-from src.getmyapidata.my_logging import \
-    setup_logging  # pylint: disable=import-error
+from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
 
 
 def gcloud_tools_installed() -> bool:
@@ -116,7 +115,7 @@ class GCloudTools:
         self.__aou_package: AouPackage = aou_package
         self.__log: logging.Logger = setup_logging(
             log_filename=os.path.join(
-                self.__aou_package.log_directory(),
+                self.__aou_package.log_directory,
                 "gcloud_tools.log",
             )
         )
@@ -124,7 +123,7 @@ class GCloudTools:
         self.__status_fn: Callable = status_fn
 
         # Ensure the path to the token file exists.
-        file_path: Path = Path(self.__aou_package.token_file())
+        file_path: Path = Path(self.__aou_package.token_file)
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Automatically prepare key file & activate account.
@@ -151,7 +150,7 @@ class GCloudTools:
             self.__log.info("Activating the service account...")
 
         system(
-            f"gcloud -q auth activate-service-account --key-file={self.__aou_package.token_file()}"
+            f"gcloud -q auth activate-service-account --key-file={self.__aou_package.token_file}"
         )
 
     def __auth(self) -> None:
@@ -169,8 +168,8 @@ class GCloudTools:
             self.__log.info("Authorizing via GCloud...")
 
         cmd: str = (
-            f"gcloud -q auth application-default login"
-            f"--impersonate-service-account {self.__aou_package.aou_service_account()}"
+            f"gcloud -q auth application-default login "
+            f"--impersonate-service-account {self.__aou_package.aou_service_account}"
         )
         results_list: list[str] = getoutput(cmd)
 
@@ -185,9 +184,9 @@ class GCloudTools:
 
         if not results.startswith("Credentials saved"):
             if self.__status_fn is not None:
-                self.__status_fn(f"Unable to login: {results}")
-            self.__log.exception("Unable to login: %s", results)
-            raise RuntimeError(f"Unable to login: {results}")
+                self.__status_fn(f"Unable to login: {results[0]}")
+            self.__log.exception("Unable to login: %s", results[0])
+            raise RuntimeError(f"Unable to login: {results[0]}")
 
     def __create_key_file(self) -> None:
         """

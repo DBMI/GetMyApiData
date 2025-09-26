@@ -141,7 +141,7 @@ def parse_version_file() -> str:
 
     with open(file_path, "r", encoding="utf-8") as version_file:
         file_content = version_file.read()
-        pattern: str = r"ProductVersion',\s'(?P<version>\d+\.\d+)"
+        pattern: str = r"ProductVersion',\s'(?P<version>\d+\.\d+\.\d+)"
         match = re.search(pattern, file_content)
 
         if match:

@@ -59,7 +59,7 @@ class ApiGui(wx.Dialog):
         self.__text_boxes_and_buttons: dict = {}
 
         # Variables we need for data request.
-        self._aou_package: AouPackage = AouPackage()
+        self.__aou_package: AouPackage = AouPackage()
 
         sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
         self.SetBackgroundColour(wx.Colour(255, 255, 255))

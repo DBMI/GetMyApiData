@@ -7,10 +7,8 @@ import os
 from configparser import ConfigParser, ExtendedInterpolation
 from typing import Union
 
-from src.getmyapidata.common import \
-    ensure_path_possible  # pylint: disable=import-error
-from src.getmyapidata.my_logging import \
-    setup_logging  # pylint: disable=import-error
+from src.getmyapidata.common import ensure_path_possible  # pylint: disable=import-error
+from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
 
 # String we insert into config file & GUI entries.
 DUMMY: str = "<YourNameHere>"
@@ -241,7 +239,7 @@ class AouPackage:
         # Update config file.
         self.__config["Logon"]["aou_service_account"] = self.aou_service_account
         self.__config["AoU"]["awardee"] = self.awardee
-        self.__config["Insite API"]["data_directory"] = self.data_directory
+        self.__config["InSite API"]["data_directory"] = self.data_directory
         self.__config["Logon"]["pmi_account"] = self.pmi_account
         self.__config["Logon"]["project"] = self.project
         self.__config["Logon"]["token_file"] = self.token_file

@@ -12,8 +12,7 @@ from typing import Union
 import requests
 
 from src.getmyapidata.aou_package import AouPackage
-from src.getmyapidata.my_logging import \
-    setup_logging  # pylint: disable=import-error
+from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
 from src.getmyapidata.progress import Progress
 
 
@@ -174,13 +173,8 @@ class InSiteAPI:
         num_new_records: int
         """
         self.__progress.increment(num_new_records)
-        self.__log.info(
-            (
-                "Success: retrieved %d records. Total records: %d",
-                num_new_records,
-                self.__progress.num_complete(),
-            )
-        )
+        comment: str = "Success: retrieved %d records. Total records: %d"
+        self.__log.info(comment, num_new_records, self.__progress.num_complete())
 
         if self.__progress_fn is not None:
             self.__progress_fn(self.__progress.percent_complete())
@@ -313,8 +307,8 @@ class InSiteAPI:
 
                     if organization not in data:
                         data[organization] = []
-                    else:
-                        data[organization].append(resource)
+
+                    data[organization].append(resource)
 
             try:
                 next_url_info: dict = ps_data["link"][0]
