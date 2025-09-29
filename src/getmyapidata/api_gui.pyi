@@ -7,7 +7,7 @@ import wx
 from src.getmyapidata.aou_package import AouPackage
 
 class ApiGui(wx.Dialog):
-    def __init__(self) -> None:
+    def __init__(self, log: logging.Logger) -> None:
         self.__aou_account_text_ctrl: wx.TextCtrl = None
         self.__aou_package: AouPackage = None
         self.__awardee_text_ctrl: wx.TextCtrl = None

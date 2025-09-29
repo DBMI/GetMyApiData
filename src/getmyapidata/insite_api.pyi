@@ -12,10 +12,9 @@ def make_header(dict1: dict) -> list: ...
 class InSiteAPI:
     def __init__(
         self,
-        log_directory: str,
+        log: logging.Logger = ...,
         progress_fn: Callable = ...,
         status_fn: Callable = ...,
-        log_level: Union[int, str] = "INFO",
     ) -> None:
         self.__log: logging.Logger = None
         self.__official_header: list = []

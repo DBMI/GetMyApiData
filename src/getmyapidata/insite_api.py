@@ -12,7 +12,6 @@ from typing import Union
 import requests
 
 from src.getmyapidata.aou_package import AouPackage
-from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
 from src.getmyapidata.progress import Progress
 
 
@@ -81,27 +80,20 @@ class InSiteAPI:
 
     def __init__(
         self,
-        log_directory: str,
+        log: logging.Logger,
         progress_fn: Callable = None,
         status_fn: Callable = None,
-        log_level: Union[int, str] = "INFO",
     ):
         """Instantiate an InSiteAPI object.
 
         Parameters
         ----------
-        log_directory: str
+        log: logging.Logger
         progress_fn: Callable
         status_fn: Callable
         """
         # Logger
-        self.__log: logging.Logger = setup_logging(
-            log_filename=os.path.join(
-                log_directory,
-                "insite_api.log",
-            )
-        )
-        self.__log.setLevel(log_level)
+        self.__log: logging.Logger = log
 
         # Variables developed in request_list() to be used in output_data().
         self.__official_header: list = []

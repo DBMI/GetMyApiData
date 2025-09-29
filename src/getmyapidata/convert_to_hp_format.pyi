@@ -14,7 +14,7 @@ def convert_patient_status(df: pandas.DataFrame) -> pandas.DataFrame: ...
 
 class HealthProConverter:
     def __init__(
-        self, log_directory: str, data_directory: str, status_fn: Callable
+        self, log: logging.Logger, data_directory: str, status_fn: Callable
     ) -> None:
         self.__log: logging.Logger = None
         self.__directory: str = None

@@ -33,16 +33,11 @@ class ApiGui(wx.Dialog):
     no public methods
     """
 
-    def __init__(self) -> None:
+    def __init__(self, log: logging.Logger) -> None:
         """
         Initialise the ApiGui class.
         """
-        self.__log: logging.Logger = setup_logging(
-            log_filename=os.path.join(
-                os.getcwd(),
-                "api_gui.log",
-            )
-        )
+        self.__log: logging.Logger = log
 
         self.__log.info("Instantiating Api Gui.")
         wx.Dialog.__init__(
@@ -59,7 +54,7 @@ class ApiGui(wx.Dialog):
         self.__text_boxes_and_buttons: dict = {}
 
         # Variables we need for data request.
-        self.__aou_package: AouPackage = AouPackage()
+        self.__aou_package: AouPackage = AouPackage(self.__log)
 
         sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
         self.SetBackgroundColour(wx.Colour(255, 255, 255))
@@ -303,7 +298,7 @@ class ApiGui(wx.Dialog):
         self.__set_status("Calling GCloudTools...")
         gcloud_mgr: GCloudTools = GCloudTools(
             aou_package=self.__aou_package,
-            log_level=self.__log.getEffectiveLevel(),
+            log=self.__log,
             status_fn=self.__set_status,
         )
         self.__set_status("Requesting token...")
@@ -312,10 +307,9 @@ class ApiGui(wx.Dialog):
         # Get data from InSiteAPI.
         self.__set_status("Instantiating InSiteAPI object...")
         api_mgr: InSiteAPI = InSiteAPI(
-            log_directory=self.__aou_package.log_directory,
+            log=self.__log,
             progress_fn=self.__set_progress,
             status_fn=self.__set_status,
-            log_level=self.__log.getEffectiveLevel(),
         )
         self.__set_status("Requesting InSiteAPI data...")
         data: dict = api_mgr.request_data(
@@ -337,7 +331,7 @@ class ApiGui(wx.Dialog):
         # Convert to HealthPro format.
         self.__set_status("Converting to HealthPro format.")
         hp_converter: HealthProConverter = HealthProConverter(
-            log_directory=self.__aou_package.log_directory,
+            log=self.__log,
             data_directory=data_directory,
             status_fn=self.__set_status,
         )

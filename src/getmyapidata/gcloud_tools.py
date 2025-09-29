@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Union
 
 from src.getmyapidata.aou_package import AouPackage
-from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
+from src.getmyapidata.my_logging import \
+    setup_logging  # pylint: disable=import-error
 
 
 def gcloud_tools_installed() -> bool:
@@ -96,7 +97,7 @@ class GCloudTools:
     def __init__(
         self,
         aou_package: AouPackage,
-        log_level: Union[int, str] = "INFO",
+        log: logging.Logger,
         status_fn: Callable = None,
     ):
         """
@@ -105,7 +106,7 @@ class GCloudTools:
         Parameters
         ----------
         aou_package : AouPackage
-        log_level: Union[int, str]  Optional log level
+        log: logging.Logger object
         status_fn : callable        Optional external fn to report status
         Return
         ------
@@ -113,13 +114,7 @@ class GCloudTools:
         """
 
         self.__aou_package: AouPackage = aou_package
-        self.__log: logging.Logger = setup_logging(
-            log_filename=os.path.join(
-                self.__aou_package.log_directory,
-                "gcloud_tools.log",
-            )
-        )
-        self.__log.setLevel(log_level)
+        self.__log: logging.Logger = log
         self.__status_fn: Callable = status_fn
 
         # Ensure the path to the token file exists.

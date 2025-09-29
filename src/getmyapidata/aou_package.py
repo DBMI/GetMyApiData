@@ -7,26 +7,32 @@ import os
 from configparser import ConfigParser, ExtendedInterpolation
 from typing import Union
 
-from src.getmyapidata.common import ensure_path_possible  # pylint: disable=import-error
-from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
+from src.getmyapidata.common import \
+    ensure_path_possible  # pylint: disable=import-error
+from src.getmyapidata.my_logging import \
+    setup_logging  # pylint: disable=import-error
 
 # String we insert into config file & GUI entries.
 DUMMY: str = "<YourNameHere>"
 
 
-def get_config(log: logging.Logger) -> ConfigParser:
+def get_config(log: logging.Logger, config_file: str = None) -> ConfigParser:
     """
     Reads config file.
 
     Parameters
     ----------
     log: logging.Logger object
+    config_file: str                    Optional
 
     Returns
     -------
     config parser object
     """
-    config_file: str = get_default_ini_path()
+
+    if not config_file:
+        config_file = get_default_ini_path()
+
     log.info(f"Reading config from {config_file}.")
 
     if not os.path.isfile(config_file):
@@ -93,22 +99,16 @@ class AouPackage:
     Contains variables needed to request participant data.
     """
 
-    def __init__(self, level: Union[int, str] = "INFO") -> None:
+    def __init__(self, log: logging.Logger) -> None:
         """
         Initializes the AouPackage class.
 
         Parameters
         ----------
-        level: Union[int, str]      INFO/DEBUG etc.
+        log: logging.Logger
         """
 
-        self.__log: logging.Logger = setup_logging(
-            log_filename=os.path.join(
-                os.getcwd(),
-                "aou_package.log",
-            )
-        )
-        self.__log.setLevel(level)
+        self.__log: logging.Logger = log
         self.__log.info("Instantiating AoU Package object.")
 
         # Either read or create a config file.
@@ -119,7 +119,6 @@ class AouPackage:
         self.awardee: str = self.__config["AoU"]["awardee"]
         self.data_directory: str = self.__config["InSite API"]["data_directory"]
         self.endpoint: str = self.__config["AoU"]["endpoint"]
-        self.log_directory: str = self.__config["Logs"]["log_directory"]
         self.pmi_account: str = self.__config["Logon"]["pmi_account"]
         self.project: str = self.__config["Logon"]["project"]
         self.token_file: str = self.__config["Logon"]["token_file"]
