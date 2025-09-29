@@ -1,7 +1,10 @@
+import logging
 from configparser import ConfigParser
 from logging import Logger
 
-def get_config() -> ConfigParser: ...
+DUMMY: str = "<YourNameHere>"
+
+def get_config(log: logging.Logger, config_file: str) -> ConfigParser: ...
 def get_default_ini_path() -> str: ...
 def make_config(config_file: str, log: Logger) -> None: ...
 
@@ -10,14 +13,13 @@ class AouPackage:
     Contains variables needed to request participant data.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, log: logging.Logger) -> None:
         self.aou_service_account: str = None
         self.awardee: str = None
         self.__config: ConfigParser = None
         self.data_directory: str = None
         self.endpoint: str = None
         self.__log: Logger = None
-        self.log_directory: str = None
         self.pmi_account: str = None
         self.project: str = None
         self.token_file: str = None

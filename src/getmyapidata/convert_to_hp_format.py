@@ -9,8 +9,6 @@ from collections.abc import Callable
 import numpy as np
 import pandas
 
-from src.getmyapidata.my_logging import setup_logging  # pylint: disable=import-error
-
 
 # UTILITY CLASS
 # Forces all data typing to strings
@@ -94,23 +92,17 @@ class HealthProConverter:
     """
 
     def __init__(
-        self, log_directory: str, data_directory: str, status_fn: Callable = None
+        self, log: logging.Logger, data_directory: str, status_fn: Callable = None
     ) -> None:
         """Instantiate a HealthProConverter object
 
         Parameters
         ----------
-        log_directory: str          Where to put the logs
+        log: logging.Logger         log object
         data_directory: str         Where to store the data file
         status_fn: Callable         Method from calling object to report status.
         """
-        self.__log: logging.Logger = setup_logging(
-            log_filename=os.path.join(
-                log_directory,
-                "convert_to_hp.log",
-            )
-        )
-
+        self.__log: logging.Logger = log
         self.__directory: str = data_directory
         self.__status_fn: Callable = status_fn
 

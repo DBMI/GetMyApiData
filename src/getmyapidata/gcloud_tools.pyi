@@ -12,7 +12,7 @@ class GCloudTools:
     def __init__(
         self,
         aou_package: AouPackage,
-        log_level: Union[int, str] = "INFO",
+        log: logging.Logger,
         status_fn: Callable = ...,
     ) -> None:
         self.__log: logging.Logger = None

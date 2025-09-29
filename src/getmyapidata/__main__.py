@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # Create the GUI.
     log.info("Instantiating ApiGui object.")
-    gui: ApiGui = ApiGui()
+    gui: ApiGui = ApiGui(log)
 
     try:
         splash.Destroy()
