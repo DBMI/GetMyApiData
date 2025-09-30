@@ -4,6 +4,7 @@ config.ini
 config_real.ini
 *_transformed.csv
 
-dist
-src/build
-src/dist
+/build/
+/dist/
+/htmlcov/
+/keys/
