@@ -43,7 +43,7 @@ def setup_logging(log_filename: Union[str, None] = None) -> logging.Logger:
     just_the_filename = os.path.splitext(os.path.basename(log_filename))[0]
     logger = logging.getLogger(just_the_filename)
     console_handler = logging.StreamHandler(sys.stdout)
-    console_format = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+    console_format = logging.Formatter("%(module)s - %(levelname)s - %(message)s")
     console_handler.setFormatter(console_format)
 
     # New log for every day; discard logs > 30 days old.
@@ -56,7 +56,7 @@ def setup_logging(log_filename: Union[str, None] = None) -> logging.Logger:
         delay=False,
     )
     logfile_format = logging.Formatter(
-        fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        fmt="%(asctime)s - %(module)s - %(levelname)s - %(message)s"
     )
     logfile_handler.setFormatter(logfile_format)
 
