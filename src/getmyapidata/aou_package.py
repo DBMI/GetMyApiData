@@ -6,7 +6,8 @@ import logging
 import os
 from configparser import ConfigParser, ExtendedInterpolation
 
-from src.getmyapidata.common import ensure_path_possible  # pylint: disable=import-error
+from src.getmyapidata.common import \
+    ensure_path_possible  # pylint: disable=import-error
 
 # String we insert into config file & GUI entries.
 DUMMY: str = "<YourNameHere>"
@@ -188,6 +189,17 @@ class AouPackage:
         """
         self.awardee = self.__config["AoU"]["awardee"]
         return self.awardee
+
+    def restore_endpoint(self) -> str:
+        """
+        Lets external class pull the config file value of endpoint property.
+
+        Returns
+        -------
+        str
+        """
+        self.token_file = self.__config["AoU"]["endpoint"]
+        return self.token_file
 
     def restore_pmi_account(self) -> str:
         """
