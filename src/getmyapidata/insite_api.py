@@ -4,7 +4,9 @@ Contains InSiteAPI class.
 import csv
 import logging
 import os
+import threading
 import time
+from collections import namedtuple
 from collections.abc import Callable
 from pathlib import Path
 from typing import Union
@@ -13,6 +15,9 @@ import requests
 
 from src.getmyapidata.aou_package import AouPackage
 from src.getmyapidata.progress import Progress
+
+# Fold resp, num_attempts into a named tuple.
+ResponsePackage = namedtuple("ResponsePackage", ["resp", "num_attempts"])
 
 
 def join_headers(h1: list, h2: list) -> list:
@@ -61,37 +66,46 @@ def make_header(dict1: dict) -> list:
     return ret
 
 
-class InSiteAPI:
+class InSiteAPI(threading.Thread):
     """
     An interface with the AwardeeInSite API
 
     Parameters
     ----------
+    self.__api_package
+    self.data
     self.__log
     self.__official_header
-    self.__progress_fn
-    self.__status_fn
+    self.__report_fn
+    self.__stop_event
 
     Methods
     ---------
     output_data()
-    request_data()
+    run()
     """
 
     def __init__(
-        self,
-        log: logging.Logger,
-        progress_fn: Callable = None,
-        status_fn: Callable = None,
+        self, api_package: namedtuple, log: logging.Logger, report_fn: Callable
     ):
         """Instantiate an InSiteAPI object.
 
         Parameters
         ----------
+        api_package: namedtuple     Contains the token file name, awardee & endpoint info
         log: logging.Logger
-        progress_fn: Callable
-        status_fn: Callable
+        report_fn: Callable         Tell something to calling function
         """
+        # Set up ability of calling function to stop data request.
+        threading.Thread.__init__(self)
+        self.__stop_event: threading.Event = threading.Event()
+
+        # Everything we'll need to make request.
+        self.__api_package: namedtuple = api_package
+
+        # Property used to record results.
+        self.__data: dict = {}
+
         # Logger
         self.__log: logging.Logger = log
 
@@ -99,19 +113,116 @@ class InSiteAPI:
         self.__official_header: list = []
 
         # We can use these to report to calling function how & what we're doing.
-        self.__progress_fn: Callable = progress_fn
-        self.__status_fn: Callable = status_fn
+        self.__report_fn: Callable = report_fn
 
         # Status
         self.__progress: Progress = Progress()
 
-    def output_data(self, data: dict, data_directory: str) -> None:
+    def __build_line(self, d: dict) -> list:
+        """
+        Handles putting together output package from dictionary.
+
+        Parameters
+        ----------
+        d: dict         One organization's data
+
+        Returns
+        -------
+        line: list      To be written out
+        """
+
+        line: list = []
+
+        for h in self.__official_header:
+            try:
+                if d[h] != "UNSET":
+                    line.append(d[h])
+                else:
+                    line.append("")
+            except KeyError:
+                line.append("")
+
+        return line
+
+    def __extract_organization_data(self, resource: dict) -> None:
+        """
+        Updates the self.__data dictionary given one entry.
+
+        Parameters
+        ----------
+        resource: dict
+
+        """
+
+        if "organization" in resource:
+            organization: str = resource["organization"]
+
+            if organization is None or organization.strip() == "":
+                organization = "Unpaired"
+
+            if organization not in self.__data:
+                self.__data[organization] = []
+
+            self.__data[organization].append(resource)
+
+    def __handle_timeouts(
+        self,
+        resp: requests.Response,
+        num_attempts: int,
+        next_url: Union[str, None],
+        headers: dict,
+    ) -> ResponsePackage:
+        """
+            Handles the details of timeouts & other errors.
+
+        Parameters
+        ----------
+        resp: requests.Response
+        num_attempts: int           So far
+        next_url: str               Exact ping address
+        headers: dict               How we want data reported
+
+        Returns
+        -------
+        response_package: ResponsePackage w/ updated values of resp, num_attempts
+        """
+        status_code: str = str(resp.status_code) if resp else "Unknown status"
+
+        if not resp or resp.status_code == 500:
+            # Server error. Pause & try again.
+            num_attempts += 1
+            self.__log.error(
+                "Server error: %s. Have made %d attempts.",
+                status_code,
+                num_attempts,
+            )
+
+            if num_attempts < 2:
+                self.__log.debug("Pausing for another try.")
+                time.sleep(30)
+                resp = requests.get(next_url, headers=headers, timeout=60)
+            else:
+                self.__log.error("Exiting.")
+                raise RuntimeError(
+                    (
+                        f"Server error: {status_code}. "
+                        f"Have made {num_attempts} attempts. Exiting."
+                    )
+                )
+        else:
+            resp_text: str = resp.text if resp else "Unknown error"
+            self.__log.error("Error: api request failed.\n\n%s.", resp_text)
+            self.__log.error(status_code)
+            raise RuntimeError(f"Server error: {status_code}. Exiting.")
+
+        return ResponsePackage(resp, num_attempts)
+
+    def output_data(self, data_directory: str) -> None:
         """
         Produces .csv files from extracted data.
 
         Parameters
         ----------
-        data: dict
         data_directory: str                             Where do you want the files to be created?
 
         Returns
@@ -125,13 +236,11 @@ class InSiteAPI:
         data_directory_path: Path = Path(data_directory)
         data_directory_path.mkdir(parents=True, exist_ok=True)
 
-        for organization in data.keys():
-            csv_filepath = os.path.join(
-                data_directory, organization + "_participant_list.csv"
-            )
+        for key, value in self.__data.items():
+            csv_filepath = os.path.join(data_directory, key + "_participant_list.csv")
 
-            if self.__status_fn is not None:
-                self.__status_fn(f"Writing to {csv_filepath}")
+            if self.__report_fn is not None:
+                self.__report_fn(f"Writing to {csv_filepath}")
             else:
                 self.__log.info("Writing to %s", csv_filepath)
 
@@ -139,19 +248,17 @@ class InSiteAPI:
                 writer: csv.writer = csv.writer(file)
                 writer.writerow(self.__official_header)
 
-                for d in data[organization]:
-                    line = []
-
-                    for h in self.__official_header:
-                        try:
-                            if d[h] != "UNSET":
-                                line.append(d[h])
-                            else:
-                                line.append("")
-                        except KeyError:
-                            line.append("")
-
+                for d in value:
+                    line: list = self.__build_line(d)
                     writer.writerow(line)
+
+    def __report_completion(self) -> None:
+        """
+        Handles call to external function.
+        """
+        # Let calling function know we're done.
+        if self.__report_fn is not None:
+            self.__report_fn(True)
 
     def __report_progress(
         self,
@@ -168,8 +275,9 @@ class InSiteAPI:
         comment: str = "Success: retrieved %d records. Total records: %d"
         self.__log.info(comment, num_new_records, self.__progress.num_complete())
 
-        if self.__progress_fn is not None:
-            self.__progress_fn(self.__progress.percent_complete())
+        if self.__report_fn is not None:
+            self.__log.debug("Calling external progress function.")
+            self.__report_fn(self.__progress.percent_complete())
 
     def __request_response(self, next_url: Union[str, None], headers: dict) -> dict:
         """
@@ -190,127 +298,108 @@ class InSiteAPI:
         resp: requests.Response = requests.get(next_url, headers=headers, timeout=30)
 
         while True:
-            status_code: str = str(resp.status_code) if resp else "Unknown status"
-
             if resp and resp.status_code == 200:
                 ps_data = resp.json()
-
-                if (
-                    "resourceType" not in ps_data
-                    or ps_data["resourceType"] != "Bundle"
-                    or "entry" not in ps_data
-                ):
-                    self.__log.error("No bundle")
-
+                self.__test_for_bundle(ps_data)
                 break
 
-            if not resp or resp.status_code == 500:
-                # Server error. Pause & try again.
-                num_attempts += 1
-                self.__log.error(
-                    "Server error: %s. Have made %d attempts.",
-                    status_code,
-                    num_attempts,
-                )
+            response_package: ResponsePackage = self.__handle_timeouts(
+                resp=resp, num_attempts=num_attempts, next_url=next_url, headers=headers
+            )
+            resp = response_package.resp
+            num_attempts = response_package.num_attempts
 
-                if num_attempts < 2:
-                    self.__log.debug("Pausing for another try.")
-                    time.sleep(30)
-                    resp: requests.Response = requests.get(
-                        next_url, headers=headers, timeout=60
-                    )
-                else:
-                    self.__log.error("Exiting.")
-                    raise RuntimeError(
-                        (
-                            f"Server error: {status_code}. "
-                            f"Have made {num_attempts} attempts. Exiting."
-                        )
-                    )
-            else:
-                resp_text: str = resp.text if resp else "Unknown error"
-                self.__log.error("Error: api request failed.\n\n%s.", resp_text)
-                self.__log.error(status_code)
-                raise RuntimeError(f"Server error: {status_code}. Exiting.")
+        if "total" in ps_data and not self.__progress.is_set():
+            self.__progress.set(ps_data["total"])
 
         return ps_data
 
-    def request_data(
-        self,
-        aou_package: AouPackage,
-        token: str,
-        max_pages: Union[int, None] = None,
-        num_rows_per_page: Union[int, None] = 1000,
-    ) -> list:
+    def run(self) -> None:
         """
-        Request list from AwardeeInSite API.
+        Request data from AwardeeInSite API.
 
-        Parameters
-        ----------
-        aou_package: AouPackage     Contains the token file name, awardee & endpoint info
-        token: str
-        num_rows_per_page: int      Optional (default: 1000)
-        max_pages: int              Optional (default: None)
-
-        Returns
-        -------
-        data: dict by organization
+        Saves result in internal variable:
+        self.data: dict by organization
         """
+        # Constants
+        num_rows_per_page: int = 1000
+
         headers: dict = {
             "content-type": "application/json",
-            "Authorization": f"Bearer {token}",
+            "Authorization": f"Bearer {self.__api_package.token}",
         }
 
-        data: dict = {}
-
+        aou_package: AouPackage = self.__api_package.aou_package
         next_url: Union[str, None] = (
             f"{aou_package.endpoint}?_sort=lastModified&_includeTotal=TRUE"
             f"&_count={num_rows_per_page}&awardee={aou_package.awardee}"
         )
+
         self.__log.debug("next_url: %s", next_url)
 
-        while next_url:
-            if max_pages is not None:
-                self.__log.debug("Max pages set = -1")
-                max_pages -= 1
+        self.__data = {}
 
-            if max_pages is not None and max_pages < 0:
-                self.__log.debug("Max pages set to %d.", max_pages)
-                break
-
+        while next_url and not self.__stop_event.is_set():
             ps_data: dict = self.__request_response(next_url, headers)
-
-            if "total" in ps_data and not self.__progress.is_set():
-                self.__progress.set(ps_data["total"])
-
             self.__report_progress(len(ps_data["entry"]))
-            next_url = None
 
             for entry in ps_data["entry"]:
                 resource = entry["resource"]
                 h = make_header(resource)
                 self.__official_header = join_headers(self.__official_header, h)
+                self.__extract_organization_data(resource)
 
-                if "organization" in resource:
-                    organization: str = resource["organization"]
+            next_url = self.__update_url(ps_data)
 
-                    if organization is None or organization.strip() == "":
-                        organization = "Unpaired"
+        # Let calling function know we're done.
+        self.__report_completion()
 
-                    if organization not in data:
-                        data[organization] = []
+    def stop(self) -> None:
+        """
+        Lets calling function tell us to stop.
+        """
+        self.__log.info("Stop requested")
+        self.__stop_event.set()
 
-                    data[organization].append(resource)
+    def __test_for_bundle(self, ps_data: dict) -> None:
+        """
+            Tests to ensure dictionary is as expected.
 
-            try:
-                next_url_info: dict = ps_data["link"][0]
+        Parameters
+        ----------
+        ps_data: dict
+        """
 
-                if next_url_info["relation"] == "next":
-                    next_url = next_url_info["url"]
+        if (
+            "resourceType" not in ps_data
+            or ps_data["resourceType"] != "Bundle"
+            or "entry" not in ps_data
+        ):
+            self.__log.error("No bundle")
 
-                self.__log.debug("------------------")
-                self.__log.debug(next_url)
-            except KeyError:
-                self.__log.error("Key error")
+    def __update_url(self, ps_data: dict) -> str:
+        """
+        Get url of next page from the returned data.
 
-        return data
+        Parameters
+        ----------
+        ps_data: dict
+
+        Returns
+        -------
+        next_url: str
+        """
+        next_url: Union[str, None] = None
+
+        try:
+            next_url_info: dict = ps_data["link"][0]
+
+            if next_url_info["relation"] == "next":
+                next_url = next_url_info["url"]
+
+            self.__log.debug("------------------")
+            self.__log.debug(next_url)
+        except KeyError:
+            self.__log.error("Key error")
+
+        return next_url

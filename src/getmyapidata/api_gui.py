@@ -4,9 +4,10 @@ Module: Contains class ApiGui, which creates the GUI
 """
 
 import logging
-import os
+from collections import namedtuple
 from collections.abc import Callable
 from tkinter import filedialog
+from typing import Union
 
 import wx
 import wx.adv
@@ -16,7 +17,6 @@ from src.getmyapidata.common import get_exe_version
 from src.getmyapidata.convert_to_hp_format import HealthProConverter
 from src.getmyapidata.gcloud_tools import GCloudTools, gcloud_tools_installed
 from src.getmyapidata.insite_api import InSiteAPI
-from src.getmyapidata.my_logging import setup_logging
 
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
@@ -55,6 +55,9 @@ class ApiGui(wx.Dialog):
 
         # Variables we need for data request.
         self.__aou_package: AouPackage = AouPackage(self.__log)
+        self.__gcloud_mgr: GCloudTools
+        self.__api_mgr: InSiteAPI
+        self.__is_cancelled: bool = False
 
         sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
         self.SetBackgroundColour(wx.Colour(255, 255, 255))
@@ -157,11 +160,12 @@ class ApiGui(wx.Dialog):
             )
 
         # CANCEL BUTTON
-        cancel_button: wx.Button = wx.Button(
+        self.__cancel_button: wx.Button = wx.Button(
             self.__my_panel, id=wx.ID_ANY, label="Cancel", style=wx.BORDER_SUNKEN
         )
-        self.__my_grid.Add(cancel_button, pos=(8, 1), flag=wx.ALL, border=5)
-        cancel_button.Bind(wx.EVT_BUTTON, self.__on_cancel_clicked)
+        self.__my_grid.Add(self.__cancel_button, pos=(8, 1), flag=wx.ALL, border=5)
+        self.__cancel_button.Bind(wx.EVT_BUTTON, self.__on_cancel_clicked)
+        self.__cancel_button.Disable()
 
         # VERSION INFO
         footnote_font: wx.Font = wx.Font(
@@ -183,6 +187,9 @@ class ApiGui(wx.Dialog):
 
         # Pop-up menu upon right-click.
         self.__my_panel.Bind(wx.EVT_RIGHT_DOWN, self.__on_show_menu)
+
+        # Do this before closing.
+        self.Bind(wx.EVT_CLOSE, self.__on_close)
 
         # Finish at Frame level.
         sizer.Add(self.__my_panel, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
@@ -274,6 +281,36 @@ class ApiGui(wx.Dialog):
         )
         self.__my_grid.AddGrowableCol(idx=1, proportion=1)
 
+    def __auth_report(self, progress: Union[bool, int, str]) -> None:
+        """
+        Allow external method to either change status bar, gauge or report completion.
+
+        Parameters
+        ----------
+        progress: Union[bool, int, str]
+        """
+        if isinstance(progress, bool):
+            self.__on_auth_completion()
+        elif isinstance(progress, int):
+            wx.CallAfter(self.__set_gauge, int(progress))
+        elif isinstance(progress, str):
+            wx.CallAfter(self.__set_status_bar, str(progress))
+
+    def __data_report(self, progress: Union[bool, int, str]) -> None:
+        """
+        Allow external method to either change status bar, gauge or report completion.
+
+        Parameters
+        ----------
+        progress: Union[bool, int, str]
+        """
+        if isinstance(progress, bool):
+            self.__on_data_completion()
+        elif isinstance(progress, int):
+            wx.CallAfter(self.__set_gauge, int(progress))
+        elif isinstance(progress, str):
+            wx.CallAfter(self.__set_status_bar, str(progress))
+
     def __enable_if_inputs_complete(self) -> None:
         """
         Checks to see if it's OK to enable the "Request Data" button.
@@ -295,48 +332,15 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        self.__set_status("Calling GCloudTools...")
-        gcloud_mgr: GCloudTools = GCloudTools(
+        self.__set_status_bar("Calling GCloudTools...")
+        self.__gcloud_mgr: GCloudTools = GCloudTools(
             aou_package=self.__aou_package,
             log=self.__log,
-            status_fn=self.__set_status,
-        )
-        self.__set_status("Requesting token...")
-        token: str = gcloud_mgr.get_token()
-
-        # Get data from InSiteAPI.
-        self.__set_status("Instantiating InSiteAPI object...")
-        api_mgr: InSiteAPI = InSiteAPI(
-            log=self.__log,
-            progress_fn=self.__set_progress,
-            status_fn=self.__set_status,
-        )
-        self.__set_status("Requesting InSiteAPI data...")
-        data: dict = api_mgr.request_data(
-            aou_package=self.__aou_package,
-            token=token,
+            status_fn=self.__auth_report,
         )
 
-        data_directory: str = self.__get_destination_directory()
-
-        # Create .csv output files.
-        self.__set_status(f"Saving data to {data_directory}...")
-        api_mgr.output_data(
-            data=data,
-            data_directory=data_directory,
-        )
-        self.__set_status(f"Download complete. Results in {data_directory}.")
-        self.__set_progress(0)
-
-        # Convert to HealthPro format.
-        self.__set_status("Converting to HealthPro format.")
-        hp_converter: HealthProConverter = HealthProConverter(
-            log=self.__log,
-            data_directory=data_directory,
-            status_fn=self.__set_status,
-        )
-        hp_converter.convert()
-        self.__set_status(f"Complete. Results in {data_directory}.")
+        # Kick off thread, which will call our __on_auth_completion() method once thread is done.
+        self.__gcloud_mgr.start()
 
     def __get_destination_directory(self) -> str:
         """
@@ -385,6 +389,30 @@ class ApiGui(wx.Dialog):
         restore_button.Enable()
         self.__enable_if_inputs_complete()
 
+    def __on_auth_completion(self) -> None:
+        """
+        Event handler for when GCloud thread completes.
+        """
+
+        self.__set_status_bar("Requesting token...")
+        token: str = self.__gcloud_mgr.get_token()
+
+        # Fold token, aou_package into a named tuple.
+        ApiRequestPackage = namedtuple("ApiRequestPackage", ["aou_package", "token"])
+
+        # Get data from InSiteAPI.
+        self.__set_status_bar("Instantiating InSiteAPI object...")
+        self.__api_mgr = InSiteAPI(
+            api_package=ApiRequestPackage(self.__aou_package, token),
+            log=self.__log,
+            report_fn=self.__data_report,
+        )
+        self.__set_status_bar("Requesting InSiteAPI data...")
+        self.__cancel_button.Enable()
+
+        # Kick off thread, which will call our __on_data_completion() method once thread is done.
+        self.__api_mgr.start()
+
     def __on_awardee_text_changed(self, event: wx.EVT_TEXT) -> None:
         """
         Event handler for when user changes this text control:
@@ -419,8 +447,51 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        self.Destroy()
+        self.__cancel_button.Disable()
+        self.__log.info("Cancel button pressed.")
+        self.__api_mgr.stop()
+        self.__is_cancelled = True
+        self.__set_status_bar("Canceled")
+        self.__enable_if_inputs_complete()
         event.Skip()
+
+    def __on_close(self, event: wx.EVT_CLOSE) -> None:
+        """
+        Ensure external thread is stopped before GUI closes.
+        """
+        self.__log.info("GUI closing.")
+        self.__api_mgr.stop()
+        self.__is_cancelled = True
+        event.Skip()
+
+    def __on_data_completion(self) -> None:
+        """
+        What to do when external thread completes:
+        --create output files
+        --convert to HealthPro format
+
+        """
+        if not self.__is_cancelled:
+            data_directory: str = self.__get_destination_directory()
+
+            # Create .csv output files.
+            self.__set_status_bar(f"Saving data to {data_directory}...")
+            self.__api_mgr.output_data(
+                data_directory=data_directory,
+            )
+            self.__set_status_bar(f"Download complete. Results in {data_directory}.")
+            self.__set_gauge(0)
+
+            # Convert to HealthPro format.
+            self.__set_status_bar("Converting to HealthPro format.")
+            hp_converter: HealthProConverter = HealthProConverter(
+                log=self.__log,
+                data_directory=data_directory,
+                status_fn=self.__data_report,
+            )
+            hp_converter.convert()
+            self.__set_status_bar(f"Complete. Results in {data_directory}.")
+            self.__cancel_button.Disable()
 
     # pylint: disable=unused-argument
     def __on_ok_clicked(self, event) -> None:
@@ -440,7 +511,10 @@ class ApiGui(wx.Dialog):
         # Update config file.
         self.__aou_package.update_config()
 
+        # Call the InSiteAPI object to get the data.
         self.__get_data()
+
+        # Once done, re-enable the button.
         self.__ok_button.Enable()
 
     def __on_menu_select(self, event: wx.EVT_MENU) -> None:
@@ -632,7 +706,7 @@ class ApiGui(wx.Dialog):
         restore_button.Enable()
         self.__enable_if_inputs_complete()
 
-    def __set_progress(self, pct: int) -> None:
+    def __set_gauge(self, pct: int) -> None:
         """
         Sets value of progress bar.
 
@@ -644,10 +718,10 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
+        self.__log.debug(f"Received low-level call to set progress bar to {pct}.")
         self.__gauge.SetValue(pct)
-        wx.Yield()
 
-    def __set_status(self, status: str) -> None:
+    def __set_status_bar(self, status: str) -> None:
         """
         Sets value of text status bar.
 
@@ -659,6 +733,5 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        self.__log.info(status)
+        self.__log.debug(f"Received low-level call to set status bar to {status}.")
         self.__status_text.SetLabel(status)
-        wx.Yield()

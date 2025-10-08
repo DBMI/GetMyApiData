@@ -9,6 +9,8 @@ from collections.abc import Callable
 import numpy as np
 import pandas
 
+from src.getmyapidata.my_logging import setup_logging
+
 
 # UTILITY CLASS
 # Forces all data typing to strings
@@ -346,8 +348,12 @@ class HealthProConverter:
 
 
 if __name__ == "__main__":
+    my_log: logging.Logger = setup_logging(
+        log_filename=os.path.join(os.getcwd(), "convert_to_hp_format.log")
+    )
     hpc: HealthProConverter = HealthProConverter(
-        log_directory=r"F:\dbmi.data\aou_submission\api_gui_test",
         data_directory=r"F:\dbmi.data\aou_submission\api_gui_test",
+        log=my_log,
+        status_fn=None,
     )
     hpc.convert()

@@ -2,5 +2,6 @@
 extension-pkg-whitelist=pywintypes
 
 [MESSAGES CONTROL]
+disable=duplicate-code
 extension-pkg-allow-list=win32api
 generated-members = wx.*

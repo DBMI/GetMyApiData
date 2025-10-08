@@ -2,16 +2,13 @@
 Contains class GCLoudTools & associated static methods for GCloud authentication.
 """
 import logging
-import os
 import subprocess
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Union
 
 from src.getmyapidata.aou_package import AouPackage
-from src.getmyapidata.my_logging import \
-    setup_logging  # pylint: disable=import-error
 
 
 def gcloud_tools_installed() -> bool:
@@ -81,7 +78,7 @@ def system(cmd: str) -> None:
 
 
 # pylint: disable=too-few-public-methods)
-class GCloudTools:
+class GCloudTools(threading.Thread):
     """
     Takes care of gcloud authentication, tokens, etc.
 
@@ -108,11 +105,13 @@ class GCloudTools:
         aou_package : AouPackage
         log: logging.Logger object
         status_fn : callable        Optional external fn to report status
+
         Return
         ------
         none; Instantiates object
         """
 
+        threading.Thread.__init__(self)
         self.__aou_package: AouPackage = aou_package
         self.__log: logging.Logger = log
         self.__status_fn: Callable = status_fn
@@ -120,16 +119,6 @@ class GCloudTools:
         # Ensure the path to the token file exists.
         file_path: Path = Path(self.__aou_package.token_file)
         file_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Automatically prepare key file & activate account.
-        self.__auth()
-        time.sleep(5)
-        self.__create_key_file()
-        time.sleep(10)
-        self.__activate()
-
-        # Maybe we need to pause after account activation?
-        time.sleep(5)
 
     def __activate(self) -> None:
         """
@@ -233,16 +222,41 @@ class GCloudTools:
             token_payload: str = token[0]
 
             if not token_payload.startswith("ya"):
-                if self.__status_fn is not None:
-                    self.__status_fn(f"Authentication Token Error: {token_payload}")
-
-                self.__log.exception("Authentication Token Error: %s", token_payload)
+                self.__report_error(f"Authentication Token Error: {token_payload}")
                 raise RuntimeError(f"Authentication Token Error: {token_payload}")
         else:
-            if self.__status_fn is not None:
-                self.__status_fn("Unable to retrieve token.")
-
-            self.__log.exception("Unable to retrieve token.")
-            raise RuntimeError("Unable to retrieve token.")
+            self.__report_error("Unable to retrieve token from the key file")
+            raise RuntimeError("Unable to retrieve token from the key file")
 
         return token_payload
+
+    def __report_error(self, status: str) -> None:
+        """ "
+        Wraps the status_fn provided by calling function.
+
+        Parameters
+        status: str
+        """
+        if self.__status_fn is not None:
+            self.__status_fn(status)
+
+        self.__log.exception(status)
+
+    def run(self) -> None:
+        """
+        Handles authentication, activate and key generation in a separate thread.
+        """
+
+        # Authenticate, prepare key file & activate account.
+        self.__auth()
+        time.sleep(5)
+        self.__create_key_file()
+        time.sleep(10)
+        self.__activate()
+
+        # Maybe we need to pause after account activation?
+        time.sleep(5)
+
+        # Let calling function know we're done.
+        if self.__status_fn is not None:
+            self.__status_fn(True)
