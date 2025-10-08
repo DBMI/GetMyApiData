@@ -16,6 +16,7 @@ if __name__ == "__main__":
     log: logging.Logger = setup_logging(
         log_filename=os.path.join(os.getcwd(), "getmyapidata.log")
     )
+    # log.setLevel(logging.DEBUG)
 
     # Display splash screen.
     app: wx.App = wx.App(redirect=False)

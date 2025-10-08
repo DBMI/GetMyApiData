@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import pandas
 
@@ -14,7 +14,7 @@ def convert_patient_status(df: pandas.DataFrame) -> pandas.DataFrame: ...
 
 class HealthProConverter:
     def __init__(
-        self, log: logging.Logger, data_directory: str, status_fn: Callable
+        self, log: logging.Logger, data_directory: str, status_fn: Union[Callable, None]
     ) -> None:
         self.__log: logging.Logger = None
         self.__directory: str = None

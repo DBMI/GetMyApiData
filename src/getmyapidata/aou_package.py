@@ -5,12 +5,8 @@ Contains the AouPackage class,
 import logging
 import os
 from configparser import ConfigParser, ExtendedInterpolation
-from typing import Union
 
-from src.getmyapidata.common import \
-    ensure_path_possible  # pylint: disable=import-error
-from src.getmyapidata.my_logging import \
-    setup_logging  # pylint: disable=import-error
+from src.getmyapidata.common import ensure_path_possible  # pylint: disable=import-error
 
 # String we insert into config file & GUI entries.
 DUMMY: str = "<YourNameHere>"

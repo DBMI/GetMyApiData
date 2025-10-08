@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='GetMyApiData',
-    version='0.2.1',
+    version='1.0.0',
     packages=['getmyapidata'],
     package_dir={'getmyapidata': 'src/getmyapidata'},
     url='https://github.com/DBMI/GetMyApiData',
