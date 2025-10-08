@@ -110,10 +110,10 @@ class ApiGui(wx.Dialog):
         # LOCATION OF TOKEN FILE
         self.__add_controls(
             5,
-            "Token File",
-            self.__aou_package.token_file,
-            self.__on_token_file_text_changed,
-            self.__on_restore_token_file_button_clicked,
+            "Endpoint",
+            self.__aou_package.endpoint,
+            self.__on_endpoint_text_changed,
+            self.__on_restore_endpoint_button_clicked,
         )
 
         # CHECK THAT GCLOUD TOOLS ARE INSTALLED.
@@ -460,8 +460,11 @@ class ApiGui(wx.Dialog):
         Ensure external thread is stopped before GUI closes.
         """
         self.__log.info("GUI closing.")
-        self.__api_mgr.stop()
         self.__is_cancelled = True
+
+        if self.__api_mgr:
+            self.__api_mgr.stop()
+
         event.Skip()
 
     def __on_data_completion(self) -> None:
@@ -648,7 +651,7 @@ class ApiGui(wx.Dialog):
         text_ctrl.SetValue(self.__aou_package.restore_project())
         button.Disable()
 
-    def __on_restore_token_file_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+    def __on_restore_endpoint_button_clicked(self, event: wx.EVT_BUTTON) -> None:
         """
         Restore button handler
 
@@ -662,7 +665,7 @@ class ApiGui(wx.Dialog):
         """
         button: wx.Button = event.GetEventObject()
         text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
-        text_ctrl.SetValue(self.__aou_package.restore_token_file())
+        text_ctrl.SetValue(self.__aou_package.restore_endpoint())
         button.Disable()
 
     def __on_show_menu(self, event: wx.EVT_MENU) -> None:
@@ -685,7 +688,7 @@ class ApiGui(wx.Dialog):
         self.PopupMenu(menu, event.GetPosition())
         menu.Destroy()
 
-    def __on_token_file_text_changed(self, event: wx.EVT_TEXT) -> None:
+    def __on_endpoint_text_changed(self, event: wx.EVT_TEXT) -> None:
         """
         Event handler for when user changes this text control:
             1) Updates the property
@@ -701,7 +704,7 @@ class ApiGui(wx.Dialog):
         None
         """
         text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        self.__aou_package.token_file = text_ctrl_source.GetValue()
+        self.__aou_package.endpoint = text_ctrl_source.GetValue()
         restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
         restore_button.Enable()
         self.__enable_if_inputs_complete()
