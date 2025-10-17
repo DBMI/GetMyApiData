@@ -3,6 +3,7 @@ Tests methods of convert_to_hp_format.py
 """
 import math
 import os
+from unittest.mock import MagicMock
 
 import pandas
 
@@ -43,9 +44,10 @@ def test_convert_patient_status(fake_patient_status_dataframe) -> None:
 
 
 def test_hp_converter(fake_patient_dataframe, fake_logger) -> None:
-    right_here: str = os.getcwd()
+    right_here: str = os.path.dirname(os.path.realpath(__file__))
+    mock_status_bar: MagicMock = MagicMock()
     hp: HealthProConverter = HealthProConverter(
-        log=fake_logger, data_directory=right_here
+        log=fake_logger, data_directory=right_here, status_fn=mock_status_bar
     )
     assert isinstance(hp, HealthProConverter)
     hp.convert()
@@ -118,3 +120,4 @@ def test_hp_converter(fake_patient_dataframe, fake_logger) -> None:
         "Enrollment Site",
     ]
     assert transformed_dataframe.columns.isin(columns).all()
+    mock_status_bar.assert_called()

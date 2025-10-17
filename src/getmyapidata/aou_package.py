@@ -32,7 +32,7 @@ def get_config(log: logging.Logger, config_file: str = None) -> ConfigParser:
 
     log.info(f"Reading config from {config_file}.")
 
-    if not os.path.isfile(config_file):
+    if not (os.path.exists(config_file) and os.path.isfile(config_file)):
         log.info(f"Config file {config_file} not found.")
         make_config(config_file, log)
 
@@ -96,20 +96,21 @@ class AouPackage:
     Contains variables needed to request participant data.
     """
 
-    def __init__(self, log: logging.Logger) -> None:
+    def __init__(self, log: logging.Logger, config_file: str = "") -> None:
         """
         Initializes the AouPackage class.
 
         Parameters
         ----------
         log: logging.Logger
+        config_file: str        Optional
         """
 
         self.__log: logging.Logger = log
         self.__log.info("Instantiating AoU Package object.")
 
         # Either read or create a config file.
-        self.__config: ConfigParser = get_config(self.__log)
+        self.__config: ConfigParser = get_config(self.__log, config_file)
 
         # Variables we need for data request.
         self.aou_service_account: str = self.__config["Logon"]["aou_service_account"]
@@ -156,17 +157,12 @@ class AouPackage:
         else:
             self.__log.debug("Input is null.")
 
-        if input_value.isspace():
-            self.__log.debug("Input is blank.")
-        else:
-            self.__log.debug("Input not whitespace: %s", input_value)
-
         if DUMMY in input_value:
             self.__log.debug("Input has dummy value: %s", input_value)
         else:
             self.__log.debug("Input does not contain dummy: %s", input_value)
 
-        return input_value and not input_value.isspace() and not DUMMY in input_value
+        return input_value and not DUMMY in input_value
 
     def restore_aou_service_account(self) -> str:
         """
@@ -198,8 +194,8 @@ class AouPackage:
         -------
         str
         """
-        self.token_file = self.__config["AoU"]["endpoint"]
-        return self.token_file
+        self.endpoint = self.__config["AoU"]["endpoint"]
+        return self.endpoint
 
     def restore_pmi_account(self) -> str:
         """

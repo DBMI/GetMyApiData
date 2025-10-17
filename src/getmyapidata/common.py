@@ -57,7 +57,7 @@ def get_base_path() -> str:
     """
     base_path: str
 
-    if getattr(sys, "frozen", False):
+    if getattr(sys, "frozen", False):  # pragma: no cover
         base_path = sys._MEIPASS  # pylint: disable=W0212
     else:
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -75,7 +75,7 @@ def get_exe_path() -> str:
     """
     exe_path: str
 
-    if getattr(sys, "frozen", False):
+    if getattr(sys, "frozen", False):  # pragma: no cover
         exe_path = sys.executable
     else:
         exe_path = os.path.abspath(__file__)
@@ -98,7 +98,7 @@ def get_exe_version(log: logging.Logger) -> str:
     exe_path: str = get_exe_path()
     log.debug("Found exe path: {exe_path}.")
 
-    try:
+    try:  # pragma: no cover
         # Get the full path to the executable.
         log.debug(f"Getting abspath from {exe_path}.")
         full_path = os.path.abspath(exe_path)
@@ -125,8 +125,8 @@ def get_exe_version(log: logging.Logger) -> str:
         if ver_from_file:
             return ver_from_file
 
-        print(f"Error getting version for {exe_path}: {e}")
-        return ""
+        print(f"Error getting version for {exe_path}: {e}")  # pragma: no cover
+        return ""  # pragma: no cover
 
 
 def parse_version_file() -> str:
@@ -147,7 +147,7 @@ def parse_version_file() -> str:
         if match:
             return match.group("version")
 
-        return ""
+        return ""  # pragma: no cover
 
 
 # https://stackoverflow.com/a/13790741/20241849
@@ -163,10 +163,11 @@ def resource_path(relative_path: str) -> str:
     -------
     base_path: str
     """
-    if getattr(sys, "frozen", False):
+    if getattr(sys, "frozen", False):  # pragma: no cover
         # Running in a PyInstaller bundle.
         base_path = sys._MEIPASS  # pylint: disable=W0212
     else:
         # Running in a normal Python environment.
         base_path = os.getcwd()
+
     return str(os.path.join(base_path, relative_path))

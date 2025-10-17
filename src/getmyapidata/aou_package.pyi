@@ -13,7 +13,7 @@ class AouPackage:
     Contains variables needed to request participant data.
     """
 
-    def __init__(self, log: logging.Logger) -> None:
+    def __init__(self, log: logging.Logger, config_file: str = "") -> None:
         self.aou_service_account: str = None
         self.awardee: str = None
         self.__config: ConfigParser = None

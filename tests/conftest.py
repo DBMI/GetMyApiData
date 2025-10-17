@@ -1,8 +1,8 @@
 import logging
 import logging.handlers
 import os
-import shutil
 import sys
+from collections import namedtuple
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -11,24 +11,38 @@ import pytest
 
 from src.getmyapidata.aou_package import DUMMY, AouPackage
 
+ApiRequestPackage = namedtuple("ApiRequestPackage", ["aou_package", "token"])
 
-@pytest.fixture(name="fake_aou_package")
+
+@pytest.fixture(name="real_aou_package")
 def aou_package(fake_logger) -> AouPackage:
     # Copy a real config file.
     config_file_real: str = os.path.join(os.path.dirname(__file__), "config_real.ini")
-    config_file_temp: str = os.path.join(os.path.dirname(__file__), "config.ini")
-    shutil.copy(config_file_real, config_file_temp)
-    ap: AouPackage = AouPackage(fake_logger)
 
-    if os.path.exists(config_file_temp):
-        os.remove(config_file_temp)
+    if not os.path.exists(config_file_real):
+        pytest.fail(f"Missing real config file '{config_file_real}'")
 
+    ap: AouPackage = AouPackage(log=fake_logger, config_file=config_file_real)
     return ap
 
 
 @pytest.fixture(name="fake_dummy_value")
 def dummy_value() -> str:
     return DUMMY
+
+
+@pytest.fixture(name="fake_aou_package")
+def fake_aou_package(fake_logger: logging.Logger, fake_config_file: Path) -> AouPackage:
+    aou_package: AouPackage = AouPackage(fake_logger, config_file=str(fake_config_file))
+    return aou_package
+
+
+@pytest.fixture(name="fake_api_request_package")
+def fake_api_request_package(
+    fake_aou_package: AouPackage, fake_token: str
+) -> ApiRequestPackage:
+    api_package = ApiRequestPackage(fake_aou_package, fake_token)
+    return api_package
 
 
 @pytest.fixture(scope="function")
@@ -61,6 +75,73 @@ def fake_config_file(tmp_path) -> Path:
     return config_file
 
 
+@pytest.fixture(scope="function")
+def fake_config_file_blank_input(tmp_path) -> Path:
+    """
+    Create temporary config file for testing.
+    """
+    config_file = tmp_path / "config.ini"
+
+    path_not_real: str = r"C:\tmp\not_there"
+    config: ConfigParser = ConfigParser()
+    config["AoU"] = {
+        "awardee": "dummy_awardee",
+        "endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite",
+    }
+    config["InSite API"] = {
+        "data_directory": path_not_real,
+    }
+    # Leave aou_service_account blank with \tab.
+    config["Logon"] = {
+        "aou_service_account": "    ",
+        "pmi_account": "nobody@pmi-ops.org",
+        "project": "all-of-us-ops-data-api-prod",
+        "token_file": os.path.join(path_not_real, "key.json"),
+    }
+    config["Logs"] = {"log_directory": os.path.join(path_not_real, "logs")}
+
+    with open(config_file, "w", encoding="utf-8") as configfile:
+        config.write(configfile)
+
+    return config_file
+
+
+@pytest.fixture(scope="function")
+def fake_config_file_null_input(tmp_path) -> Path:
+    """
+    Create temporary config file for testing.
+    """
+    config_file = tmp_path / "config.ini"
+
+    path_not_real: str = r"C:\tmp\not_there"
+    config: ConfigParser = ConfigParser()
+    config["AoU"] = {
+        "awardee": "dummy_awardee",
+        "endpoint": r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite",
+    }
+    config["InSite API"] = {
+        "data_directory": path_not_real,
+    }
+    # Leave aou_service_account empty.
+    config["Logon"] = {
+        "aou_service_account": "",
+        "pmi_account": "nobody@pmi-ops.org",
+        "project": "all-of-us-ops-data-api-prod",
+        "token_file": os.path.join(path_not_real, "key.json"),
+    }
+    config["Logs"] = {"log_directory": os.path.join(path_not_real, "logs")}
+
+    with open(config_file, "w", encoding="utf-8") as configfile:
+        config.write(configfile)
+
+    return config_file
+
+
+@pytest.fixture(name="fake_token")
+def fake_token() -> str:
+    return "AODIUFGNAHERFUEWRUEIWIOTBWEOFINEWF"
+
+
 @pytest.fixture(name="fake_logger")
 def logger() -> logging.Logger:
     """
@@ -70,7 +151,8 @@ def logger() -> logging.Logger:
     -------
     log: logging.Logger
     """
-    log_filename: str = r"./tests/test.log"
+
+    log_filename: str = os.path.join(os.path.dirname(__file__), "test.log")
     logger = logging.getLogger(log_filename)
     console_handler = logging.StreamHandler(sys.stdout)
     console_format = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
@@ -83,6 +165,11 @@ def logger() -> logging.Logger:
     logger.addHandler(console_handler)
     logger.setLevel(logging.INFO)
     return logger
+
+
+@pytest.fixture(name="nonexistent_config_file")
+def non_existent_config_file() -> Path:
+    return Path("file_not_there.ini")
 
 
 @pytest.fixture(name="fake_series")
