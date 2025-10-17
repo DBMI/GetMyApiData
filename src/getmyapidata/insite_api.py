@@ -33,11 +33,11 @@ def join_headers(h1: list, h2: list) -> list:
     -------
     combined: list
     """
-    if h1 is None:
-        if h2 is None:
+    if not h1:
+        if not h2:
             return []
         return h2
-    if h2 is None:
+    if not h2:
         return h1
 
     set1: set = set(h1)

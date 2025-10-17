@@ -9,6 +9,7 @@ from src.getmyapidata.common import (ensure_path_possible, get_base_path,
 
 
 def test_ensure_path_possible(fake_logger: logging.Logger) -> None:
+    assert ensure_path_possible(__file__, fake_logger)
     assert ensure_path_possible(r"C:\test\temp.txt", fake_logger)
     assert not ensure_path_possible(r"Q:\test\temp.txt", fake_logger)
 

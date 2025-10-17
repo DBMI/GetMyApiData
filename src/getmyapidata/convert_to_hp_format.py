@@ -25,6 +25,7 @@ class StringConverter(dict):
     def __getitem__(self, item):
         return str
 
+    # pragma: no cover
     def get(self, default=None):  # pylint: disable=unused-argument
         return str
 
