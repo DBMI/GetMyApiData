@@ -83,5 +83,9 @@ class Progress:
         -------
         None
         """
-        self.__num_to_do = num_to_do
+        # Don't allow zero.
+        self.__num_to_do = max(1, num_to_do)
+
+        # If we're setting (or resetting) the number of items, then reset the counter.
+        self.__num_complete = 0
         self.__set = True

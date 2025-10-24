@@ -20,7 +20,7 @@ def remove_config_file(config_file: Union[str, Path, None] = None) -> None:
         os.remove(config_file)
 
 
-def test_aou_package_no_config(fake_logger: logging.Logger) -> None:
+def test_aou_package_no_config(logger: logging.Logger) -> None:
     # Remove any leftover config file.
     remove_config_file()
 
@@ -29,7 +29,7 @@ def test_aou_package_no_config(fake_logger: logging.Logger) -> None:
     if os.path.exists(config_file):
         os.remove(config_file)
 
-    aou_package: AouPackage = AouPackage(fake_logger)
+    aou_package: AouPackage = AouPackage(logger)
     assert isinstance(aou_package, AouPackage)
     assert (
         aou_package.aou_service_account
@@ -40,37 +40,37 @@ def test_aou_package_no_config(fake_logger: logging.Logger) -> None:
 
 
 def test_aou_package_with_config(
-    fake_logger: logging.Logger, fake_config_file: Path
+    logger: logging.Logger, fake_config_file: Path
 ) -> None:
-    aou_package: AouPackage = AouPackage(fake_logger, config_file=str(fake_config_file))
+    aou_package: AouPackage = AouPackage(logger, config_file=str(fake_config_file))
     assert isinstance(aou_package, AouPackage)
     assert aou_package.inputs_complete()
 
 
 def test_bad_inputs(
-    fake_logger: logging.Logger,
+    logger: logging.Logger,
     fake_config_file_blank_input: Path,
     fake_config_file_null_input: Path,
 ) -> None:
     aou_package: AouPackage = AouPackage(
-        fake_logger, config_file=str(fake_config_file_blank_input)
+        logger, config_file=str(fake_config_file_blank_input)
     )
     assert isinstance(aou_package, AouPackage)
     assert not aou_package.inputs_complete()
 
-    aou_package = AouPackage(fake_logger, config_file=str(fake_config_file_null_input))
+    aou_package = AouPackage(logger, config_file=str(fake_config_file_null_input))
     assert isinstance(aou_package, AouPackage)
     assert not aou_package.inputs_complete()
 
 
 # Test reading mocked-up file using get_config().
-def test_get_config(fake_logger: logging.Logger, fake_config_file: Path) -> None:
-    cp: ConfigParser = get_config(fake_logger, str(fake_config_file))
+def test_get_config(logger: logging.Logger, fake_config_file: Path) -> None:
+    cp: ConfigParser = get_config(logger, str(fake_config_file))
     assert isinstance(cp, ConfigParser)
     assert isinstance(cp["AoU"]["Awardee"], str)
     assert cp["AoU"]["awardee"] == "dummy_awardee"
     assert isinstance(cp["AoU"]["endpoint"], str)
-    assert cp["AoU"]["endpoint"] == r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite"
+    assert cp["AoU"]["endpoint"] == r"https://test.com"
     assert isinstance(cp["InSite API"]["data_directory"], str)
     assert cp["InSite API"]["data_directory"] == r"C:\tmp\not_there"
     assert isinstance(cp["Logon"]["aou_service_account"], str)
@@ -89,11 +89,11 @@ def test_get_config(fake_logger: logging.Logger, fake_config_file: Path) -> None
 
 
 # Test dummy values created in make_config().
-def test_make_config(fake_logger: logging.Logger, fake_dummy_value: str) -> None:
+def test_make_config(logger: logging.Logger, fake_dummy_value: str) -> None:
     # Remove any leftover config file.
     remove_config_file()
 
-    cp: ConfigParser = get_config(fake_logger)
+    cp: ConfigParser = get_config(logger)
     assert isinstance(cp, ConfigParser)
     assert isinstance(cp["AoU"]["Awardee"], str)
     assert cp["AoU"]["awardee"] == "<YourNameHere>"
@@ -115,16 +115,16 @@ def test_make_config(fake_logger: logging.Logger, fake_dummy_value: str) -> None
     assert cp["Logs"]["log_directory"] == os.getcwd()
 
 
-def test_no_config(fake_logger: logging.Logger, nonexistent_config_file: Path) -> None:
+def test_no_config(logger: logging.Logger, nonexistent_config_file: Path) -> None:
     remove_config_file(nonexistent_config_file)
 
-    cp: ConfigParser = get_config(fake_logger, str(nonexistent_config_file))
+    cp: ConfigParser = get_config(logger, str(nonexistent_config_file))
     assert isinstance(cp, ConfigParser)
     assert os.path.exists(nonexistent_config_file)
 
 
-def test_restore(fake_logger: logging.Logger, fake_config_file: Path) -> None:
-    aou_package: AouPackage = AouPackage(fake_logger, config_file=str(fake_config_file))
+def test_restore(logger: logging.Logger, fake_config_file: Path) -> None:
+    aou_package: AouPackage = AouPackage(logger, config_file=str(fake_config_file))
     assert isinstance(aou_package, AouPackage)
     assert aou_package.inputs_complete()
 
@@ -149,11 +149,11 @@ def test_restore(fake_logger: logging.Logger, fake_config_file: Path) -> None:
     assert aou_package.awardee == "dummy_awardee"
 
     # Endpoint
-    assert aou_package.endpoint == r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite"
+    assert aou_package.endpoint == r"https://test.com"
     aou_package.endpoint = "not_really"
     assert aou_package.endpoint == "not_really"
     aou_package.restore_endpoint()
-    assert aou_package.endpoint == r"https://rdr-api.pmi-ops.org/rdr/v1/AwardeeInSite"
+    assert aou_package.endpoint == r"https://test.com"
 
     # PMI account
     assert aou_package.pmi_account == "nobody@pmi-ops.org"

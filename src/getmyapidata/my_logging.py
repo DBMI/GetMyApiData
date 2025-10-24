@@ -56,7 +56,7 @@ def setup_logging(log_filename: Union[str, None] = None) -> logging.Logger:
         delay=False,
     )
     logfile_format = logging.Formatter(
-        fmt="%(asctime)s - %(module)s - %(levelname)s - %(message)s"
+        fmt="%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s"
     )
     logfile_handler.setFormatter(logfile_format)
 

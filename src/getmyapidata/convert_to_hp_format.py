@@ -1,9 +1,11 @@
 """
 Contains class HealthProConverter, which converts participant list into Health Pro format.
 """
+import glob
 import json
 import logging
 import os
+import pathlib
 from collections.abc import Callable
 
 import numpy as np
@@ -25,9 +27,8 @@ class StringConverter(dict):
     def __getitem__(self, item):
         return str
 
-    # pragma: no cover
     def get(self, default=None):  # pylint: disable=unused-argument
-        return str
+        return str  # pragma: no cover
 
 
 def convert_date(raw_date: pandas.Series) -> pandas.Series:
@@ -111,10 +112,11 @@ class HealthProConverter:
 
     def convert(self) -> None:
         """Convert all .csv files in given directory that aren't already marked as "transformed"."""
+        directory_plus_ext: str = os.path.join(self.__directory, "*.csv")
 
-        for filename_and_ext in os.listdir(self.__directory):
+        for filename_and_ext in glob.glob(directory_plus_ext):
             if (
-                filename_and_ext.endswith(".csv")
+                os.path.isfile(filename_and_ext)
                 and "transformed" not in filename_and_ext
             ):
                 just_the_filename, ext = os.path.splitext(filename_and_ext)

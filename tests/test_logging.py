@@ -16,3 +16,7 @@ def test_setup_logging(tmp_path) -> None:
     test_log: os.path.Path = tmp_path / "test.log"
     logger = setup_logging(test_log)
     assert isinstance(logger, logging.Logger)
+
+    # Using non-string as filename.
+    logger = setup_logging(12345)
+    assert isinstance(logger, logging.Logger)

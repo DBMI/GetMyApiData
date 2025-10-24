@@ -8,10 +8,10 @@ from src.getmyapidata.common import (ensure_path_possible, get_base_path,
                                      get_exe_path, get_exe_version)
 
 
-def test_ensure_path_possible(fake_logger: logging.Logger) -> None:
-    assert ensure_path_possible(__file__, fake_logger)
-    assert ensure_path_possible(r"C:\test\temp.txt", fake_logger)
-    assert not ensure_path_possible(r"Q:\test\temp.txt", fake_logger)
+def test_ensure_path_possible(logger: logging.Logger) -> None:
+    assert ensure_path_possible(__file__, logger)
+    assert ensure_path_possible(r"C:\test\temp.txt", logger)
+    assert not ensure_path_possible(r"Q:\test\temp.txt", logger)
 
 
 def test_get_base_path() -> None:
@@ -26,6 +26,6 @@ def test_get_exe_path() -> None:
     assert os.path.isfile(exe_path)
 
 
-def test_get_exe_version(fake_logger: logging.Logger) -> None:
-    exe_version: str = get_exe_version(fake_logger)
+def test_get_exe_version(logger: logging.Logger) -> None:
+    exe_version: str = get_exe_version(logger)
     assert isinstance(exe_version, str)
