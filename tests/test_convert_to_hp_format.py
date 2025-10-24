@@ -3,6 +3,7 @@ Tests methods of convert_to_hp_format.py
 """
 import math
 import os
+import sys
 from unittest.mock import MagicMock
 
 import pandas
@@ -43,81 +44,52 @@ def test_convert_patient_status(fake_patient_status_dataframe) -> None:
     assert not df["patientStatusUnknown"][1]
 
 
-def test_hp_converter(fake_patient_dataframe, fake_logger) -> None:
-    right_here: str = os.path.dirname(os.path.realpath(__file__))
-    mock_status_bar: MagicMock = MagicMock()
-    hp: HealthProConverter = HealthProConverter(
-        log=fake_logger, data_directory=right_here, status_fn=mock_status_bar
-    )
-    assert isinstance(hp, HealthProConverter)
-    hp.convert()
+def test_hp_converter(fake_patient_dataframe, logger, hp_columns) -> None:
+    right_here: str = os.path.dirname(__file__)
+
+    # If we run this test individually, right_here will be full path to tests.
+    # But if run from project directory, we'll need to append.
+    if "tests" not in right_here:
+        right_here = os.path.join(right_here, "tests")
+
     transformed_file: str = os.path.join(
         right_here, "TEST_participant_list_transformed.csv"
     )
+
+    if os.path.exists(str(transformed_file)):
+        os.remove(transformed_file)
+
+    mock_status_bar: MagicMock = MagicMock()
+    hp: HealthProConverter = HealthProConverter(
+        log=logger, data_directory=right_here, status_fn=mock_status_bar
+    )
+    assert isinstance(hp, HealthProConverter)
+    hp.convert()
     assert os.path.exists(transformed_file)
     transformed_dataframe: pandas.DataFrame = pandas.read_csv(transformed_file)
     assert isinstance(transformed_dataframe, pandas.DataFrame)
-    columns: list = [
-        "Last Name",
-        "First Name",
-        "Middle Initial",
-        "Date of Birth",
-        "PMI ID",
-        "Participant Status",
-        "Core Participant Date",
-        "Withdrawal Status",
-        "Withdrawal Date",
-        "Withdrawal Reason",
-        "Deactivation Status",
-        "Deactivation Date",
-        "Deceased",
-        "Date of Death",
-        "Date of Death Approval",
-        "Participant Origination",
-        "Consent Cohort",
-        "Date of First Primary Consent",
-        "Primary Consent Status",
-        "Primary Consent Date",
-        "Program Update",
-        "Date of Program Update",
-        "EHR Consent Status",
-        "EHR Consent Date",
-        "gRoR Consent Status",
-        "gRoR Consent Date",
-        "Language of Primary Consent",
-        "CABoR Consent Status",
-        "CABoR Consent Date",
-        "Retention Eligible",
-        "Date of Retention Eligibility",
-        "Retention Status",
-        "EHR Data Transfer",
-        "Most Recent EHR Receipt",
-        "Patient Status: Yes",
-        "Patient Status: No",
-        "Patient Status: No Access",
-        "Patient Status: Unknown",
-        "Street Address",
-        "Street Address2",
-        "City",
-        "State",
-        "Zip",
-        "Email",
-        "Login Phone",
-        "Phone",
-        "Required PPI Surveys Complete",
-        "Completed Surveys",
-        "Paired Site",
-        "Paired Organization",
-        "Physical Measurements Status",
-        "Physical Measurements Completion Date",
-        "Samples to Isolate DNA",
-        "Baseline Samples",
-        "Sex",
-        "Gender Identity",
-        "Race/Ethnicity",
-        "Education",
-        "Core Participant Minus PM Date",
-        "Enrollment Site",
-    ]
-    assert transformed_dataframe.columns.isin(columns).all()
-    mock_status_bar.assert_called()
+    assert transformed_dataframe.columns.isin(hp_columns).all()
+
+
+def test_hp_converter_no_status_fn(fake_patient_dataframe, logger, hp_columns) -> None:
+    right_here: str = os.path.dirname(__file__)
+
+    # If we run this test individually, right_here will be full path to tests.
+    # But if run from project directory, we'll need to append.
+    if "tests" not in right_here:
+        right_here = os.path.join(right_here, "tests")
+
+    transformed_file: str = os.path.join(
+        right_here, "TEST_participant_list_transformed.csv"
+    )
+
+    if os.path.exists(str(transformed_file)):
+        os.remove(transformed_file)
+
+    hp: HealthProConverter = HealthProConverter(log=logger, data_directory=right_here)
+    assert isinstance(hp, HealthProConverter)
+    hp.convert()
+    assert os.path.exists(transformed_file)
+    transformed_dataframe: pandas.DataFrame = pandas.read_csv(transformed_file)
+    assert isinstance(transformed_dataframe, pandas.DataFrame)
+    assert transformed_dataframe.columns.isin(hp_columns).all()

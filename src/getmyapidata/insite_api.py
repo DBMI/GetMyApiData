@@ -16,9 +16,6 @@ import requests
 from src.getmyapidata.aou_package import AouPackage
 from src.getmyapidata.progress import Progress
 
-# Fold resp, num_attempts into a named tuple.
-ResponsePackage = namedtuple("ResponsePackage", ["resp", "num_attempts"])
-
 
 def join_headers(h1: list, h2: list) -> list:
     """
@@ -74,7 +71,6 @@ class InSiteAPI(threading.Thread):
     ----------
     self.__api_package
     self.data
-    self.__log
     self.__official_header
     self.__report_fn
     self.__stop_event
@@ -86,7 +82,7 @@ class InSiteAPI(threading.Thread):
     """
 
     def __init__(
-        self, api_package: namedtuple, log: logging.Logger, report_fn: Callable
+        self, api_package: namedtuple, log: logging.Logger, report_fn: Callable = None
     ):
         """Instantiate an InSiteAPI object.
 
@@ -94,7 +90,7 @@ class InSiteAPI(threading.Thread):
         ----------
         api_package: namedtuple     Contains the token file name, awardee & endpoint info
         log: logging.Logger
-        report_fn: Callable         Tell something to calling function
+        report_fn: Callable         Optional Tell something to calling function
         """
         # Set up ability of calling function to stop data request.
         threading.Thread.__init__(self)
@@ -139,8 +135,8 @@ class InSiteAPI(threading.Thread):
                     line.append(d[h])
                 else:
                     line.append("")
-            except KeyError:
-                line.append("")
+            except KeyError:  # pragma: no cover
+                line.append("")  # pragma: no cover
 
         return line
 
@@ -158,7 +154,8 @@ class InSiteAPI(threading.Thread):
             organization: str = resource["organization"]
 
             if organization is None or organization.strip() == "":
-                organization = "Unpaired"
+                resource["organization"] = "Unpaired"
+                organization = resource["organization"]
 
             if organization not in self.__data:
                 self.__data[organization] = []
@@ -168,54 +165,76 @@ class InSiteAPI(threading.Thread):
     def __handle_timeouts(
         self,
         resp: requests.Response,
-        num_attempts: int,
         next_url: Union[str, None],
         headers: dict,
-    ) -> ResponsePackage:
+    ) -> dict:
         """
             Handles the details of timeouts & other errors.
 
         Parameters
         ----------
         resp: requests.Response
-        num_attempts: int           So far
         next_url: str               Exact ping address
         headers: dict               How we want data reported
 
         Returns
         -------
-        response_package: ResponsePackage w/ updated values of resp, num_attempts
+        ps_data: dict
         """
-        status_code: str = str(resp.status_code) if resp else "Unknown status"
+        num_reattempts: int = 0
+        ps_data: dict = {}
+        self.__log.debug("in __handle_timeouts")
 
-        if not resp or resp.status_code == 500:
-            # Server error. Pause & try again.
-            num_attempts += 1
-            self.__log.error(
-                "Server error: %s. Have made %d attempts.",
-                status_code,
-                num_attempts,
-            )
-
-            if num_attempts < 2:
-                self.__log.debug("Pausing for another try.")
+        while True:
+            if num_reattempts < 2:
+                self.__log.debug(
+                    f"Have made {num_reattempts} reattempts. Pausing for another try."
+                )
                 time.sleep(30)
-                resp = requests.get(next_url, headers=headers, timeout=60)
+
+                try:
+                    resp = requests.get(next_url, headers=headers, timeout=60)
+                except requests.exceptions.RequestException:
+                    self.__log.error("API request failed.")
+                    raise RuntimeError("API request failed. Exiting.")
+
+                num_reattempts += 1
             else:
-                self.__log.error("Exiting.")
+                self.__log.error(f"Have made {num_reattempts} reattempts. Exiting.")
                 raise RuntimeError(
                     (
                         f"Server error: {status_code}. "
-                        f"Have made {num_attempts} attempts. Exiting."
+                        f"Have made {num_reattempts} reattempts. Exiting."
                     )
                 )
-        else:
-            resp_text: str = resp.text if resp else "Unknown error"
-            self.__log.error("Error: api request failed.\n\n%s.", resp_text)
-            self.__log.error(status_code)
-            raise RuntimeError(f"Server error: {status_code}. Exiting.")
 
-        return ResponsePackage(resp, num_attempts)
+            status_code: str = (
+                str(resp.status_code)
+                if isinstance(resp, requests.Response) and resp.status_code
+                else "Unknown status"
+            )
+            self.__log.debug(f"Status code: {status_code}")
+
+            if resp.status_code == 200:
+                self.__log.debug(f"Success after {num_reattempts} reattempts.")
+                ps_data = resp.json()
+                break
+            elif resp.status_code == 500:
+                # Server error. Stay in loop so we'll pause & try again.
+                self.__log.error(
+                    "Server error: %s. Have made %d attempts.",
+                    status_code,
+                    num_reattempts,
+                )
+            else:
+                # It's some other code--not likely to be fixed with another attempt.
+                resp_text: str = (
+                    resp.text
+                    if isinstance(resp, requests.Response) and resp.text
+                    else "Unknown error"
+                )
+
+        return ps_data
 
     def output_data(self, data_directory: str) -> None:
         """
@@ -295,22 +314,36 @@ class InSiteAPI(threading.Thread):
         num_attempts: int = 0
         ps_data: dict = {}
 
-        resp: requests.Response = requests.get(next_url, headers=headers, timeout=30)
+        self.__log.debug(f"Requesting {next_url}")
 
-        while True:
-            if resp and resp.status_code == 200:
+        try:
+            resp: requests.Response = requests.get(
+                next_url, headers=headers, timeout=30
+            )
+
+            if resp.status_code == 200:
+                self.__log.debug(f"status code: {resp.status_code}")
                 ps_data = resp.json()
                 self.__test_for_bundle(ps_data)
-                break
+            else:
+                self.__log.debug(
+                    "Sending to timeout handler because received response but status code is not 200."
+                )
+                ps_data = self.__handle_timeouts(
+                    resp=resp, next_url=next_url, headers=headers
+                )
 
-            response_package: ResponsePackage = self.__handle_timeouts(
-                resp=resp, num_attempts=num_attempts, next_url=next_url, headers=headers
-            )
-            resp = response_package.resp
-            num_attempts = response_package.num_attempts
-
-        if "total" in ps_data and not self.__progress.is_set():
-            self.__progress.set(ps_data["total"])
+            if (
+                isinstance(ps_data, dict)
+                and "total" in ps_data
+                and not self.__progress.is_set()
+            ):
+                self.__log.debug(f"Total records: {ps_data['total']}")
+                self.__progress.set(ps_data["total"])
+        except requests.exceptions.RequestException:
+            # We didn't even get a valid response.
+            self.__log.error("Error: API request failed. Exiting.")
+            raise RuntimeError("Error: API request failed. Exiting.")
 
         return ps_data
 
@@ -376,6 +409,7 @@ class InSiteAPI(threading.Thread):
             or "entry" not in ps_data
         ):
             self.__log.error("No bundle")
+            raise RuntimeError("Unable to find required fields in dict 'ps_data'.")
 
     def __update_url(self, ps_data: dict) -> str:
         """

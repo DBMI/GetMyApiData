@@ -28,17 +28,17 @@ def test_getoutput() -> None:
 
 
 @pytest.mark.skip(reason="No need to burn up token allotment.")
-def test_instantiation(real_aou_package, fake_logger) -> None:
+def test_instantiation(real_aou_package, logger) -> None:
     def on_auth_completion(progress: Union[bool, int, str]) -> None:
         if isinstance(progress, bool):
-            fake_logger.info("Authorization complete.")
+            logger.info("Authorization complete.")
         elif isinstance(progress, int):
-            fake_logger.info(f"progress: {progress}")
+            logger.info(f"progress: {progress}")
         elif isinstance(progress, str):
-            fake_logger.info(progress)
+            logger.info(progress)
 
     gcloud_tools: GCloudTools = GCloudTools(
-        aou_package=real_aou_package, log=fake_logger, status_fn=on_auth_completion
+        aou_package=real_aou_package, log=logger, status_fn=on_auth_completion
     )
     assert isinstance(gcloud_tools, GCloudTools)
     gcloud_tools.start()
