@@ -166,6 +166,7 @@ class ApiGui(wx.Dialog):
         self.__my_grid.Add(self.__cancel_button, pos=(8, 1), flag=wx.ALL, border=5)
         self.__cancel_button.Bind(wx.EVT_BUTTON, self.__on_cancel_clicked)
         self.__cancel_button.Disable()
+        self.__cancel_button.Disable()
 
         # VERSION INFO
         footnote_font: wx.Font = wx.Font(

@@ -8,8 +8,10 @@ from pathlib import Path
 
 import pandas
 import pytest
+import wx.adv
 
 from src.getmyapidata.aou_package import DUMMY, AouPackage
+from src.getmyapidata.api_gui import ApiGui
 
 ApiRequestPackage = namedtuple("ApiRequestPackage", ["aou_package", "token"])
 
