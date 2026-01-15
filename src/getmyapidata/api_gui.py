@@ -56,7 +56,7 @@ class ApiGui(wx.Dialog):
         # Variables we need for data request.
         self.__aou_package: AouPackage = AouPackage(self.__log)
         self.__gcloud_mgr: GCloudTools
-        self.__api_mgr: InSiteAPI
+        self.__api_mgr: InSiteAPI = None
         self.__is_cancelled: bool = False
 
         sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
@@ -73,47 +73,52 @@ class ApiGui(wx.Dialog):
 
         # AWARDEE
         self.__add_controls(
-            1,
-            "Awardee",
-            self.__aou_package.awardee,
-            self.__on_awardee_text_changed,
-            self.__on_restore_awardee_button_clicked,
+            row=1,
+            label="Awardee",
+            default=self.__aou_package.awardee,
+            text_changed_fn=self.__on_awardee_text_changed,
+            restore_fn=self.__on_restore_awardee_button_clicked,
+            help_txt="Organization's All of Us awardee name"
         )
 
         # PROJECT NAME
         self.__add_controls(
-            2,
-            "Project",
-            self.__aou_package.project,
-            self.__on_project_text_changed,
-            self.__on_restore_project_button_clicked,
+            row=2,
+            label="Project",
+            default=self.__aou_package.project,
+            text_changed_fn=self.__on_project_text_changed,
+            restore_fn=self.__on_restore_project_button_clicked,
+            help_txt="All of Us project name. Should start with 'all-of-us'."
         )
 
         # PMI OPS ACCOUNT
         self.__add_controls(
-            3,
-            "PMI Account",
-            self.__aou_package.pmi_account,
-            self.__on_pmi_account_text_changed,
-            self.__on_restore_pmi_account_button_clicked,
+            row=3,
+            label="PMI Account",
+            default=self.__aou_package.pmi_account,
+            text_changed_fn=self.__on_pmi_account_text_changed,
+            restore_fn=self.__on_restore_pmi_account_button_clicked,
+            help_txt="Individual user's PMI account. Should end with '@pmi-ops.org'."
         )
 
         # AOU SERVICE ACCOUNT
         self.__add_controls(
-            4,
-            "AoU Service Account",
-            self.__aou_package.aou_service_account,
-            self.__on_aou_service_account_text_changed,
-            self.__on_restore_aou_service_account_button_clicked,
+            row=4,
+            label="AoU Service Account",
+            default=self.__aou_package.aou_service_account,
+            text_changed_fn=self.__on_aou_service_account_text_changed,
+            restore_fn=self.__on_restore_aou_service_account_button_clicked,
+            help_txt="All of Us service account name. Should contain '@all-of-us'."
         )
 
-        # LOCATION OF TOKEN FILE
+        # HTTP ADDRESS OF INSITE API
         self.__add_controls(
-            5,
-            "Endpoint",
-            self.__aou_package.endpoint,
-            self.__on_endpoint_text_changed,
-            self.__on_restore_endpoint_button_clicked,
+            row=5,
+            label="InSite API website",
+            default=self.__aou_package.endpoint,
+            text_changed_fn=self.__on_endpoint_text_changed,
+            restore_fn=self.__on_restore_endpoint_button_clicked,
+            help_txt="Website used to access InSite API. Must start with 'https://'."
         )
 
         # CHECK THAT GCLOUD TOOLS ARE INSTALLED.
@@ -166,7 +171,6 @@ class ApiGui(wx.Dialog):
         self.__my_grid.Add(self.__cancel_button, pos=(8, 1), flag=wx.ALL, border=5)
         self.__cancel_button.Bind(wx.EVT_BUTTON, self.__on_cancel_clicked)
         self.__cancel_button.Disable()
-        self.__cancel_button.Disable()
 
         # VERSION INFO
         footnote_font: wx.Font = wx.Font(
@@ -207,6 +211,7 @@ class ApiGui(wx.Dialog):
         default: str,
         text_changed_fn: Callable,
         restore_fn: Callable,
+        help_txt: str = ""
     ) -> None:
         """
         Lets us pop in a label, text control and restore button, complete with callbacks and links.
@@ -218,6 +223,7 @@ class ApiGui(wx.Dialog):
         default: str                Initial value of text ctrl
         text_changed_fn: Callable   Event handler for when text is changed
         restore_fn: Callable        Event handler for when Restore button is clicked
+        help_txt: str               Optional help text
 
         Returns
         -------
@@ -234,6 +240,8 @@ class ApiGui(wx.Dialog):
         self.__my_grid.Add(
             text_control, pos=(row, 1), flag=wx.EXPAND | wx.ALL, border=5
         )
+        text_control.SetToolTip(help_txt)
+
         restore_button: wx.Button = wx.Button(
             self.__my_panel,
             id=wx.ID_ANY,
@@ -244,6 +252,7 @@ class ApiGui(wx.Dialog):
         restore_button.Disable()
         self.__my_grid.Add(restore_button, pos=(row, 2), flag=wx.ALL, border=5)
         restore_button.Bind(wx.EVT_BUTTON, restore_fn)
+
         self.__text_boxes_and_buttons[text_control] = restore_button
         self.__buttons_and_text_boxes[restore_button] = text_control
 
@@ -385,10 +394,19 @@ class ApiGui(wx.Dialog):
         None
         """
         text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        self.__aou_package.aou_service_account = text_ctrl_source.GetValue()
         restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
         restore_button.Enable()
-        self.__enable_if_inputs_complete()
+
+        # Get and test the new value.
+        new_aou_svc_acct: str = text_ctrl_source.GetValue()
+
+        if "@all-of-us" in new_aou_svc_acct:
+            text_ctrl_source.SetBackgroundColour(wx.WHITE)
+            self.__aou_package.aou_service_account = new_aou_svc_acct
+            self.__enable_if_inputs_complete()
+        else:
+            text_ctrl_source.SetBackgroundColour(wx.YELLOW)
+
 
     def __on_auth_completion(self) -> None:
         """
@@ -412,6 +430,9 @@ class ApiGui(wx.Dialog):
         self.__cancel_button.Enable()
 
         # Kick off thread, which will call our __on_data_completion() method once thread is done.
+        # (Note: InSiteAPI class does NOT have a start() method. But it inherits from threading.thread,
+        # which DOES have a start() method. And calling the thread's start() method
+        # invokes the subclass' run() method.
         self.__api_mgr.start()
 
     def __on_awardee_text_changed(self, event: wx.EVT_TEXT) -> None:
@@ -450,7 +471,10 @@ class ApiGui(wx.Dialog):
         """
         self.__cancel_button.Disable()
         self.__log.info("Cancel button pressed.")
-        self.__api_mgr.stop()
+
+        if self.__api_mgr:
+            self.__api_mgr.stop()
+
         self.__is_cancelled = True
         self.__set_status_bar("Canceled")
         self.__enable_if_inputs_complete()
@@ -467,6 +491,7 @@ class ApiGui(wx.Dialog):
             self.__api_mgr.stop()
 
         event.Skip()
+        self.Destroy()
 
     def __on_data_completion(self) -> None:
         """
@@ -556,10 +581,21 @@ class ApiGui(wx.Dialog):
         None
         """
         text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        self.__aou_package.pmi_account = text_ctrl_source.GetValue()
         restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
         restore_button.Enable()
-        self.__enable_if_inputs_complete()
+
+        # Get and test the new value.
+        new_pmi_acct: str = text_ctrl_source.GetValue()
+
+        if new_pmi_acct.endswith("@pmi-ops.org"):
+            text_ctrl_source.SetBackgroundColour(wx.WHITE)
+            self.__aou_package.pmi_account = new_pmi_acct
+            restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+            restore_button.Enable()
+            self.__enable_if_inputs_complete()
+        else:
+            text_ctrl_source.SetBackgroundColour(wx.YELLOW)
+
 
     def __on_project_text_changed(self, event: wx.EVT_TEXT) -> None:
         """
@@ -577,10 +613,21 @@ class ApiGui(wx.Dialog):
         None
         """
         text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        self.__aou_package.project = text_ctrl_source.GetValue()
         restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
         restore_button.Enable()
-        self.__enable_if_inputs_complete()
+
+        # Get and test the new value.
+        new_project_text: str = text_ctrl_source.GetValue()
+
+        if new_project_text.startswith("all-of-us"):
+            text_ctrl_source.SetBackgroundColour(wx.WHITE)
+            self.__aou_package.project = new_project_text
+            restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+            restore_button.Enable()
+            self.__enable_if_inputs_complete()
+        else:
+            text_ctrl_source.SetBackgroundColour(wx.YELLOW)
+
 
     def __on_restore_aou_service_account_button_clicked(
         self, event: wx.EVT_BUTTON
@@ -705,10 +752,21 @@ class ApiGui(wx.Dialog):
         None
         """
         text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        self.__aou_package.endpoint = text_ctrl_source.GetValue()
         restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
         restore_button.Enable()
-        self.__enable_if_inputs_complete()
+
+        # Get and test the new value.
+        new_endpoint: str = text_ctrl_source.GetValue()
+
+        if new_endpoint.startswith("https://"):
+            text_ctrl_source.SetBackgroundColour(wx.WHITE)
+            self.__aou_package.endpoint = text_ctrl_source.GetValue()
+            restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+            restore_button.Enable()
+            self.__enable_if_inputs_complete()
+        else:
+            text_ctrl_source.SetBackgroundColour(wx.YELLOW)
+
 
     def __set_gauge(self, pct: int) -> None:
         """
