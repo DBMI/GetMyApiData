@@ -37,6 +37,13 @@ Once the files have been downloaded, the app will ask you to specify a folder in
 
 ![image_info](./pictures/data_directory.png)
 
-
 ### Support
 Contact Kevin J. Delaney at University of California San Diego: <kjdelaney@health.ucsd.edu>
+
+## Development Notes
+
+### Compilation
+In directory `C:\Users\Kevin.Delaney\PycharmProjects\GetMyApiData`, run `pyinstaller GetMyApiData.spec` to compile the app into the `\dist` folder.
+
+### Deployment
+From server `medicinedb5p01` open the app's GitHub [Releases](https://github.com/DBMI/GetMyApiData/releases) page; you can upload the `.exe` file into a new release with an updated tag.
