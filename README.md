@@ -39,4 +39,4 @@ Once the files have been downloaded, the app will ask you to specify a folder in
 
 
 ### Support
-Contact Kevin J. Delaney at UC San Diego: <kjdelaney@health.ucsd.edu>
+Contact Kevin J. Delaney at University of California San Diego: <kjdelaney@health.ucsd.edu>
