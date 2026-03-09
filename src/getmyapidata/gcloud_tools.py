@@ -168,9 +168,9 @@ class GCloudTools(threading.Thread):
 
         if not results.startswith("Credentials saved"):
             if self.__status_fn is not None:
-                self.__status_fn(f"Unable to login: {results[0]}")
-            self.__log.exception("Unable to login: %s", results[0])
-            raise RuntimeError(f"Unable to login: {results[0]}")
+                self.__status_fn(f"Unable to login: {results}")
+            self.__log.exception("Unable to login: %s", results)
+            raise RuntimeError(f"Unable to login: {results}")
 
     def __create_key_file(self) -> None:
         """
