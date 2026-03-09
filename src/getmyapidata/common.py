@@ -1,10 +1,13 @@
 """
 Collection of static utility methods.
 """
+import errno
 import logging
 import os
 import re
 import sys
+import tempfile
+from contextlib import nullcontext
 from pathlib import Path
 
 import pywintypes
@@ -127,6 +130,66 @@ def get_exe_version(log: logging.Logger) -> str:
 
         print(f"Error getting version for {exe_path}: {e}")  # pragma: no cover
         return ""  # pragma: no cover
+
+
+def get_logging_directory(suggested_dir: str) -> str | None:
+    """
+    If suggested directory is writable, use that. Otherwise, return system temp directory (or None).
+
+    Parameters
+    ----------
+    suggested_dir: str
+
+    Returns
+    -------
+    str | None
+    """
+    if is_writable(path_to_test=suggested_dir):
+        return suggested_dir
+
+    return get_temp_directory()
+
+
+# https://stackoverflow.com/a/847866/20241849
+def get_temp_directory() -> str | None:
+    """
+    Uses tempfile's capability to find system's temp directory. Tries "C:\tmp" as backup.
+
+    Returns
+    -------
+    temp_directory : str | None
+    """
+    temp_directory: str = tempfile.gettempdir()
+
+    if is_writable(path_to_test=temp_directory):
+        return temp_directory
+    else:
+        if is_writable(path_to_test="C:\tmp"):
+            return "C:\tmp"
+        else:
+            return None
+
+# https://stackoverflow.com/a/25868839/20241849
+def is_writable(path_to_test: str) -> bool:
+    """
+    Tests path to see if it is writable.
+
+    Parameters
+    ----------
+    path_to_test : str
+
+    Returns
+    -------
+    success : bool
+    """
+    try:
+        testfile = tempfile.TemporaryFile(dir=path_to_test)
+        testfile.close()
+    except OSError as e:
+        if e.errno == errno.EACCES:  # 13
+            return False
+        e.filename = path_to_test
+    return True
 
 
 def parse_version_file() -> str:

@@ -9,6 +9,7 @@ from collections.abc import Callable
 from tkinter import filedialog
 from typing import Union
 
+import os
 import wx
 import wx.adv
 
@@ -156,7 +157,7 @@ class ApiGui(wx.Dialog):
             self.__my_grid.Add(self.__ok_button, pos=(8, 0), flag=wx.ALL, border=5)
             self.__ok_button.Bind(wx.EVT_BUTTON, self.__on_ok_clicked)
         else:
-            link_label = "Must first install GCloud tools"
+            link_label = "Must first install GCloud tools."
             link_url = "https://cloud.google.com/sdk/docs/install"
             hyperlink = wx.adv.HyperlinkCtrl(self.__my_panel, -1, link_label, link_url)
 
@@ -186,6 +187,19 @@ class ApiGui(wx.Dialog):
         )
         version_text.SetFont(footnote_font)
         self.__my_grid.Add(version_text, pos=(8, 2), flag=wx.ALIGN_LEFT, border=5)
+
+        # Source - https://stackoverflow.com/a/79758967
+        # Posted by Abhishek Sourabh
+        # Retrieved 2026-03-09, License - CC BY-SA 4.0
+        log_filenames: list[str] = [os.path.abspath(handler.baseFilename) for handler in self.__log.handlers if isinstance(handler, logging.FileHandler)]
+
+        log_file_text: wx.StaticText = wx.StaticText(
+            self.__my_panel,
+            id=wx.ID_ANY,
+            label="Log file: " + log_filenames[0],
+        )
+        log_file_text.SetFont(footnote_font)
+        self.__my_grid.Add(log_file_text, pos=(9, 1), flag=wx.ALIGN_LEFT, border=5)
 
         # Connect grid sizer to panel.
         self.__my_panel.SetSizerAndFit(self.__my_grid)

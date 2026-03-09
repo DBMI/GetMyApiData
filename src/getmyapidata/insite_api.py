@@ -104,6 +104,7 @@ class InSiteAPI(threading.Thread):
 
         # Logger
         self.__log: logging.Logger = log
+        log.info("InSiteAPI initialized.")
 
         # Variables developed in request_list() to be used in output_data().
         self.__official_header: list = []
@@ -184,6 +185,7 @@ class InSiteAPI(threading.Thread):
         num_reattempts: int = 0
         ps_data: dict = {}
         self.__log.debug("in __handle_timeouts")
+        status_code: str
 
         while True:
             if num_reattempts < 2:
@@ -198,9 +200,19 @@ class InSiteAPI(threading.Thread):
                     self.__log.error("API request failed.")
                     raise RuntimeError("API request failed. Exiting.")
 
+                status_code = (
+                    str(resp.status_code)
+                    if isinstance(resp, requests.Response) and resp.status_code
+                    else "Unknown status"
+                )
                 num_reattempts += 1
             else:
                 self.__log.error(f"Have made {num_reattempts} reattempts. Exiting.")
+                status_code = (
+                    str(resp.status_code)
+                    if isinstance(resp, requests.Response) and resp.status_code
+                    else "Unknown status"
+                )
                 raise RuntimeError(
                     (
                         f"Server error: {status_code}. "
@@ -208,11 +220,6 @@ class InSiteAPI(threading.Thread):
                     )
                 )
 
-            status_code: str = (
-                str(resp.status_code)
-                if isinstance(resp, requests.Response) and resp.status_code
-                else "Unknown status"
-            )
             self.__log.debug(f"Status code: {status_code}")
 
             if resp.status_code == 200:
@@ -354,6 +361,8 @@ class InSiteAPI(threading.Thread):
         Saves result in internal variable:
         self.data: dict by organization
         """
+        self.__log.info("Starting InSite API object running.")
+
         # Constants
         num_rows_per_page: int = 1000
 
