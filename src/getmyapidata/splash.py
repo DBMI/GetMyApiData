@@ -1,6 +1,7 @@
 """
 Contains MySplashScreen class.
 """
+
 import wx
 import wx.adv
 

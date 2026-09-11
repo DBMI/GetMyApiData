@@ -1,11 +1,11 @@
 """
 Contains class HealthProConverter, which converts participant list into Health Pro format.
 """
+
 import glob
 import json
 import logging
 import os
-import pathlib
 from collections.abc import Callable
 
 import numpy as np
@@ -96,7 +96,10 @@ class HealthProConverter:
     """
 
     def __init__(
-        self, log: logging.Logger, data_directory: str, status_fn: Callable = None
+        self,
+        log: logging.Logger,
+        data_directory: str,
+        status_fn: Callable[str] | None = None,
     ) -> None:
         """Instantiate a HealthProConverter object
 
@@ -161,12 +164,12 @@ class HealthProConverter:
         #
         #   FORMAT DATE COLUMNS
         #
-        participant_match[
-            "clinicPhysicalMeasurementsFinalizedTimeFormatted"
-        ] = convert_date(participant_match["clinicPhysicalMeasurementsFinalizedTime"])
-        participant_match[
-            "consentForElectronicHealthRecordsAuthoredFormatted"
-        ] = convert_date(participant_match["consentForElectronicHealthRecordsAuthored"])
+        participant_match["clinicPhysicalMeasurementsFinalizedTimeFormatted"] = (
+            convert_date(participant_match["clinicPhysicalMeasurementsFinalizedTime"])
+        )
+        participant_match["consentForElectronicHealthRecordsAuthoredFormatted"] = (
+            convert_date(participant_match["consentForElectronicHealthRecordsAuthored"])
+        )
         participant_match["consentForStudyEnrollmentAuthoredFormatted"] = convert_date(
             participant_match["consentForStudyEnrollmentAuthored"]
         )

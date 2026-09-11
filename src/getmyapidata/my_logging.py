@@ -8,10 +8,9 @@ import logging.handlers
 import os
 import sys
 from pathlib import Path
-from typing import Union
 
 
-def setup_logging(log_filename: Union[str, None] = None) -> logging.Logger:
+def setup_logging(log_filename: str | None = None) -> logging.Logger:
     """
 
     Parameters

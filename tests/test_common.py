@@ -1,11 +1,16 @@
 """
 Test methods from common.py
 """
+
 import logging
 import os
 
-from src.getmyapidata.common import (ensure_path_possible, get_base_path,
-                                     get_exe_path, get_exe_version)
+from src.getmyapidata.common import (
+    ensure_path_possible,
+    get_base_path,
+    get_exe_path,
+    get_exe_version,
+)
 
 
 def test_ensure_path_possible(logger: logging.Logger) -> None:

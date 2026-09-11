@@ -1,15 +1,13 @@
 """
 Tests methods related to class InsiteAPI
 """
+
 import csv
 import os
-from typing import Union
-from unittest import mock
 
 import pytest
 import requests
 import requests_mock
-from urllib3.exceptions import ConnectTimeoutError
 
 from src.getmyapidata.aou_package import AouPackage
 from src.getmyapidata.insite_api import InSiteAPI, join_headers, make_header
@@ -58,7 +56,7 @@ def test_make_header() -> None:
 def test_insite_api(
     logger, fake_api_request_package, fake_json_I, fake_json_II, fake_data_directory
 ) -> None:
-    def on_auth_completion(progress: Union[bool, int, str]) -> None:
+    def on_auth_completion(progress: bool | int | str) -> None:
         if isinstance(progress, bool):
             logger.info("Authorization complete.")
         elif isinstance(progress, int):
@@ -112,10 +110,8 @@ def test_insite_api(
         full_file_path: str = os.path.join(fake_data_directory, file)
         data: list[dict] = []
 
-        with open(full_file_path, "r", encoding="utf-8") as f:
-            reader: csv.DictReader = csv.DictReader(f)
-            for row in reader:
-                data.append(row)
+        with open(full_file_path, encoding="utf-8") as f:
+            data = list(csv.DictReader(f))
 
         assert len(data) == 2
         this_org: dict = data[0]
@@ -126,7 +122,7 @@ def test_insite_api(
 def test_insite_api_malformed_json(
     logger, fake_api_request_package, fake_json, fake_data_directory
 ) -> None:
-    def on_auth_completion(progress: Union[bool, int, str]) -> None:
+    def on_auth_completion(progress: bool | int | str) -> None:
         if isinstance(progress, bool):
             logger.info("Authorization complete.")
         elif isinstance(progress, int):
@@ -187,10 +183,8 @@ def test_insite_api_no_report_fn(
         full_file_path: str = os.path.join(fake_data_directory, file)
         data: list[dict] = []
 
-        with open(full_file_path, "r", encoding="utf-8") as f:
-            reader: csv.DictReader = csv.DictReader(f)
-            for row in reader:
-                data.append(row)
+        with open(full_file_path, encoding="utf-8") as f:
+            data = list(csv.DictReader(f))
 
         assert len(data) == 1
         this_org: dict = data[0]
@@ -201,7 +195,7 @@ def test_insite_api_no_report_fn(
 def test_insite_api_other_errors(
     logger, fake_api_request_package, fake_json, fake_data_directory
 ) -> None:
-    def on_auth_completion(progress: Union[bool, int, str]) -> None:
+    def on_auth_completion(progress: bool | int | str) -> None:
         if isinstance(progress, bool):
             logger.info("Authorization complete.")
         elif isinstance(progress, int):
@@ -232,7 +226,7 @@ def test_insite_api_other_errors(
 
 
 def test_insite_api_stop(logger, fake_api_request_package, fake_json) -> None:
-    def on_auth_completion(progress: Union[bool, int, str]) -> None:
+    def on_auth_completion(progress: bool | int | str) -> None:
         if isinstance(progress, bool):
             logger.info("Authorization complete.")
         elif isinstance(progress, int):
@@ -276,7 +270,7 @@ def test_insite_api_stop(logger, fake_api_request_package, fake_json) -> None:
 def test_insite_api_timeouts(
     logger, fake_api_request_package, fake_json, fake_data_directory
 ) -> None:
-    def on_auth_completion(progress: Union[bool, int, str]) -> None:
+    def on_auth_completion(progress: bool | int | str) -> None:
         if isinstance(progress, bool):
             logger.info("Authorization complete.")
         elif isinstance(progress, int):
@@ -338,7 +332,7 @@ def test_insite_api_timeouts(
             response_list=[
                 {"status_code": 500},
                 {"exc": requests.exceptions.ConnectionError},
-            ]
+            ],
         )
 
         with pytest.raises(RuntimeError):

@@ -1,13 +1,13 @@
 """
 Collection of static utility methods.
 """
+
 import errno
 import logging
 import os
 import re
 import sys
 import tempfile
-from contextlib import nullcontext
 from pathlib import Path
 
 import pywintypes
@@ -169,6 +169,7 @@ def get_temp_directory() -> str | None:
         else:
             return None
 
+
 # https://stackoverflow.com/a/25868839/20241849
 def is_writable(path_to_test: str) -> bool:
     """
@@ -183,8 +184,8 @@ def is_writable(path_to_test: str) -> bool:
     success : bool
     """
     try:
-        testfile = tempfile.TemporaryFile(dir=path_to_test)
-        testfile.close()
+        with tempfile.TemporaryFile(dir=path_to_test) as testfile:
+            testfile.close()
     except OSError as e:
         if e.errno == errno.EACCES:  # 13
             return False
@@ -202,7 +203,7 @@ def parse_version_file() -> str:
     """
     file_path: str = resource_path("version_info.txt")
 
-    with open(file_path, "r", encoding="utf-8") as version_file:
+    with open(file_path, encoding="utf-8") as version_file:
         file_content = version_file.read()
         pattern: str = r"ProductVersion',\s'(?P<version>\d+\.\d+\.\d+)"
         match = re.search(pattern, file_content)

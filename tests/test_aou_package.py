@@ -1,17 +1,16 @@
 """
 Tests methods related to class AouPackage
 """
+
 import logging
 import os
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Union
 
-from src.getmyapidata.aou_package import (AouPackage, get_config,
-                                          get_default_ini_path)
+from src.getmyapidata.aou_package import AouPackage, get_config, get_default_ini_path
 
 
-def remove_config_file(config_file: Union[str, Path, None] = None) -> None:
+def remove_config_file(config_file: str | Path | None = None) -> None:
     # Remove any leftover config file.
     if not config_file:
         config_file: str = get_default_ini_path()

@@ -1,6 +1,7 @@
 """
 Tests methods related to logging setup
 """
+
 import logging
 import os
 

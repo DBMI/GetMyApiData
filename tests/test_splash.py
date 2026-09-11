@@ -1,6 +1,7 @@
 """
 Tests methods related to class Splash
 """
+
 import time
 
 import wx

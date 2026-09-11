@@ -2,18 +2,18 @@
 Contains the AouPackage class,
     which packages up all the variables needed to request participant data.
 """
+
 import logging
 import os
 from configparser import ConfigParser, ExtendedInterpolation
 
-from src.getmyapidata.common import \
-    ensure_path_possible  # pylint: disable=import-error
+from src.getmyapidata.common import ensure_path_possible  # pylint: disable=import-error
 
 # String we insert into config file & GUI entries.
 DUMMY: str = "<YourNameHere>"
 
 
-def get_config(log: logging.Logger, config_file: str = None) -> ConfigParser:
+def get_config(log: logging.Logger, config_file: str | None = None) -> ConfigParser:
     """
     Reads config file.
 

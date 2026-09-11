@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Callable
-from typing import Union
 
 import wx
 
@@ -9,27 +8,28 @@ from src.getmyapidata.gcloud_tools import GCloudTools
 from src.getmyapidata.insite_api import InSiteAPI
 
 class ApiGui(wx.Dialog):
-    def __init__(self, log: logging.Logger) -> None:
-        self.__aou_account_text_ctrl: wx.TextCtrl = None
-        self.__aou_package: AouPackage = None
-        self.__api_mgr: InSiteAPI = None
-        self.__awardee_text_ctrl: wx.TextCtrl = None
-        self.__gcloud_mgr: GCloudTools = None
-        self.__is_cancelled: bool = False
-        self.__log: logging.Logger = None
-        self.__my_grid: wx.GridBagSizer = None
-        self.__my_panel: wx.Panel = None
-        self.__project_text_ctrl: wx.TextCtrl = None
-        self.__pmi_account_text_ctrl: wx.TextCtrl = None
-        self.__token_file_text_ctrl: wx.TextCtrl = None
+    __aou_account_text_ctrl: wx.TextCtrl = None
+    __aou_package: AouPackage = None
+    __api_mgr: InSiteAPI = None
+    __awardee_text_ctrl: wx.TextCtrl = None
+    __gcloud_mgr: GCloudTools = None
+    __is_cancelled: bool = False
+    __log: logging.Logger = None
+    __my_grid: wx.GridBagSizer = None
+    __my_panel: wx.Panel = None
+    __project_text_ctrl: wx.TextCtrl = None
+    __pmi_account_text_ctrl: wx.TextCtrl = None
+    __token_file_text_ctrl: wx.TextCtrl = None
 
-        self.__buttons_and_text_boxes: dict = {}
-        self.__text_boxes_and_buttons: dict = {}
+    __buttons_and_text_boxes: dict = None
+    __text_boxes_and_buttons: dict = None
 
-        self.__cancel_button: wx.Button = None
-        self.__gauge: wx.Gauge = None
-        self.__ok_button: wx.Button = None
-        self.__status_text: wx.StaticText = None
+    __cancel_button: wx.Button = None
+    __gauge: wx.Gauge = None
+    __ok_button: wx.Button = None
+    __status_text: wx.StaticText = None
+
+    def __init__(self, log: logging.Logger) -> None: ...
     def __add_controls(
         self,
         row: int,
@@ -37,11 +37,11 @@ class ApiGui(wx.Dialog):
         default: str,
         text_changed_fn: Callable,
         restore_fn: Callable,
-        help_txt: str
+        help_txt: str,
     ) -> None: ...
     def __add_title(self, label: str) -> None: ...
-    def __auth_report(self, progress: Union[bool, int, str]) -> None: ...
-    def __data_report(self, progress: Union[bool, int, str]) -> None: ...
+    def __auth_report(self, progress: bool | int | str) -> None: ...
+    def __data_report(self, progress: bool | int | str) -> None: ...
     def __enable_if_inputs_complete(self) -> None: ...
     def __get_data(self) -> None: ...
     def __get_destination_directory(self) -> str: ...

@@ -1,6 +1,7 @@
 """
 Contains Progress class, which keeps track of the # of things to do and # completed.
 """
+
 import math
 
 

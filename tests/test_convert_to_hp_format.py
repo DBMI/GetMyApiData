@@ -1,16 +1,18 @@
 """
 Tests methods of convert_to_hp_format.py
 """
+
 import math
 import os
-import sys
 from unittest.mock import MagicMock
 
 import pandas
 
-from src.getmyapidata.convert_to_hp_format import (HealthProConverter,
-                                                   convert_date,
-                                                   convert_patient_status)
+from src.getmyapidata.convert_to_hp_format import (
+    HealthProConverter,
+    convert_date,
+    convert_patient_status,
+)
 
 
 def test_convert_date(fake_series) -> None:

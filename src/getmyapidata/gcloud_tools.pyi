@@ -9,15 +9,16 @@ def getoutput(command: str) -> list[str]: ...
 def system(command: str) -> None: ...
 
 class GCloudTools(threading.Thread):
+    aou_package: AouPackage
+    log: logging.Logger
+    status_fn: Callable
+    __log: logging.Logger = None
+    __aou_package: AouPackage = None
+    __status_fn: Callable = None
+
     def __init__(
         self,
-        aou_package: AouPackage,
-        log: logging.Logger,
-        status_fn: Callable = ...,
-    ) -> None:
-        self.__log: logging.Logger = None
-        self.__aou_package: AouPackage = None
-        self.__status_fn: Callable = None
+    ) -> None: ...
     def __activate(self) -> None: ...
     def __auth(self) -> None: ...
     def __create_key_file(self) -> None: ...

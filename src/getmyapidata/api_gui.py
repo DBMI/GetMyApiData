@@ -4,12 +4,11 @@ Module: Contains class ApiGui, which creates the GUI
 """
 
 import logging
+import os
 from collections import namedtuple
 from collections.abc import Callable
 from tkinter import filedialog
-from typing import Union
 
-import os
 import wx
 import wx.adv
 
@@ -79,7 +78,7 @@ class ApiGui(wx.Dialog):
             default=self.__aou_package.awardee,
             text_changed_fn=self.__on_awardee_text_changed,
             restore_fn=self.__on_restore_awardee_button_clicked,
-            help_txt="Organization's All of Us awardee name"
+            help_txt="Organization's All of Us awardee name",
         )
 
         # PROJECT NAME
@@ -89,7 +88,7 @@ class ApiGui(wx.Dialog):
             default=self.__aou_package.project,
             text_changed_fn=self.__on_project_text_changed,
             restore_fn=self.__on_restore_project_button_clicked,
-            help_txt="All of Us project name. Should start with 'all-of-us'."
+            help_txt="All of Us project name. Should start with 'all-of-us'.",
         )
 
         # PMI OPS ACCOUNT
@@ -99,7 +98,7 @@ class ApiGui(wx.Dialog):
             default=self.__aou_package.pmi_account,
             text_changed_fn=self.__on_pmi_account_text_changed,
             restore_fn=self.__on_restore_pmi_account_button_clicked,
-            help_txt="Individual user's PMI account. Should end with '@pmi-ops.org'."
+            help_txt="Individual user's PMI account. Should end with '@pmi-ops.org'.",
         )
 
         # AOU SERVICE ACCOUNT
@@ -109,7 +108,7 @@ class ApiGui(wx.Dialog):
             default=self.__aou_package.aou_service_account,
             text_changed_fn=self.__on_aou_service_account_text_changed,
             restore_fn=self.__on_restore_aou_service_account_button_clicked,
-            help_txt="All of Us service account name. Should contain '@all-of-us'."
+            help_txt="All of Us service account name. Should contain '@all-of-us'.",
         )
 
         # HTTP ADDRESS OF INSITE API
@@ -119,12 +118,11 @@ class ApiGui(wx.Dialog):
             default=self.__aou_package.endpoint,
             text_changed_fn=self.__on_endpoint_text_changed,
             restore_fn=self.__on_restore_endpoint_button_clicked,
-            help_txt="Website used to access InSite API. Must start with 'https://'."
+            help_txt="Website used to access InSite API. Must start with 'https://'.",
         )
 
         # CHECK THAT GCLOUD TOOLS ARE INSTALLED.
         if gcloud_tools_installed():
-
             # PROGRESS BAR
             self.__gauge = wx.Gauge(self.__my_panel, range=100, size=wx.Size(350, 25))
             self.__my_grid.Add(
@@ -191,7 +189,11 @@ class ApiGui(wx.Dialog):
         # Source - https://stackoverflow.com/a/79758967
         # Posted by Abhishek Sourabh
         # Retrieved 2026-03-09, License - CC BY-SA 4.0
-        log_filenames: list[str] = [os.path.abspath(handler.baseFilename) for handler in self.__log.handlers if isinstance(handler, logging.FileHandler)]
+        log_filenames: list[str] = [
+            os.path.abspath(handler.baseFilename)
+            for handler in self.__log.handlers
+            if isinstance(handler, logging.FileHandler)
+        ]
 
         log_file_text: wx.StaticText = wx.StaticText(
             self.__my_panel,
@@ -225,7 +227,7 @@ class ApiGui(wx.Dialog):
         default: str,
         text_changed_fn: Callable,
         restore_fn: Callable,
-        help_txt: str = ""
+        help_txt: str = "",
     ) -> None:
         """
         Lets us pop in a label, text control and restore button, complete with callbacks and links.
@@ -305,7 +307,7 @@ class ApiGui(wx.Dialog):
         )
         self.__my_grid.AddGrowableCol(idx=1, proportion=1)
 
-    def __auth_report(self, progress: Union[bool, int, str]) -> None:
+    def __auth_report(self, progress: bool | int | str) -> None:
         """
         Allow external method to either change status bar, gauge or report completion.
 
@@ -320,7 +322,7 @@ class ApiGui(wx.Dialog):
         elif isinstance(progress, str):
             wx.CallAfter(self.__set_status_bar, str(progress))
 
-    def __data_report(self, progress: Union[bool, int, str]) -> None:
+    def __data_report(self, progress: bool | int | str) -> None:
         """
         Allow external method to either change status bar, gauge or report completion.
 
@@ -420,7 +422,6 @@ class ApiGui(wx.Dialog):
             self.__enable_if_inputs_complete()
         else:
             text_ctrl_source.SetBackgroundColour(wx.YELLOW)
-
 
     def __on_auth_completion(self) -> None:
         """
@@ -610,7 +611,6 @@ class ApiGui(wx.Dialog):
         else:
             text_ctrl_source.SetBackgroundColour(wx.YELLOW)
 
-
     def __on_project_text_changed(self, event: wx.EVT_TEXT) -> None:
         """
         Event handler for when user changes this text control:
@@ -641,7 +641,6 @@ class ApiGui(wx.Dialog):
             self.__enable_if_inputs_complete()
         else:
             text_ctrl_source.SetBackgroundColour(wx.YELLOW)
-
 
     def __on_restore_aou_service_account_button_clicked(
         self, event: wx.EVT_BUTTON
@@ -780,7 +779,6 @@ class ApiGui(wx.Dialog):
             self.__enable_if_inputs_complete()
         else:
             text_ctrl_source.SetBackgroundColour(wx.YELLOW)
-
 
     def __set_gauge(self, pct: int) -> None:
         """

@@ -1,6 +1,7 @@
 """
 Tests methods of Progress class.
 """
+
 from src.getmyapidata.progress import Progress
 
 

@@ -1,10 +1,12 @@
 """
 Main routine--creates API GUI.
 """
+
 import argparse
 import logging
 import os
 from tkinter import messagebox
+
 import wx.adv
 
 from src.getmyapidata.api_gui import ApiGui
@@ -25,7 +27,8 @@ if __name__ == "__main__":
 
     if logging_dir:
         log: logging.Logger = setup_logging(
-            log_filename=os.path.join(logging_dir, "getmyapidata.log"))
+            log_filename=os.path.join(logging_dir, "getmyapidata.log")
+        )
         args = parser.parse_args()
 
         if args.log_level and args.log_level in [

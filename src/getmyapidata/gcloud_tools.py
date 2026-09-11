@@ -1,6 +1,7 @@
 """
 Contains class GCLoudTools & associated static methods for GCloud authentication.
 """
+
 import logging
 import subprocess
 import threading
@@ -95,7 +96,7 @@ class GCloudTools(threading.Thread):
         self,
         aou_package: AouPackage,
         log: logging.Logger,
-        status_fn: Callable = None,
+        status_fn: Callable[str] | None = None,
     ):
         """
         Create instance of GCloudTools class.
@@ -114,7 +115,7 @@ class GCloudTools(threading.Thread):
         threading.Thread.__init__(self)
         self.__aou_package: AouPackage = aou_package
         self.__log: logging.Logger = log
-        self.__status_fn: Callable = status_fn
+        self.__status_fn: Callable[str] | None = status_fn
 
         # Ensure the path to the token file exists.
         file_path: Path = Path(self.__aou_package.token_file)

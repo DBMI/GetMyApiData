@@ -4,7 +4,7 @@ from logging import Logger
 
 DUMMY: str = "<YourNameHere>"
 
-def get_config(log: logging.Logger, config_file: str) -> ConfigParser: ...
+def get_config(log: logging.Logger, config_file: str | None) -> ConfigParser: ...
 def get_default_ini_path() -> str: ...
 def make_config(config_file: str, log: Logger) -> None: ...
 
@@ -13,16 +13,17 @@ class AouPackage:
     Contains variables needed to request participant data.
     """
 
-    def __init__(self, log: logging.Logger, config_file: str = "") -> None:
-        self.aou_service_account: str = None
-        self.awardee: str = None
-        self.__config: ConfigParser = None
-        self.data_directory: str = None
-        self.endpoint: str = None
-        self.__log: Logger = None
-        self.pmi_account: str = None
-        self.project: str = None
-        self.token_file: str = None
+    aou_service_account: str = None
+    awardee: str = None
+    __config: ConfigParser = None
+    data_directory: str = None
+    endpoint: str = None
+    __log: Logger = None
+    pmi_account: str = None
+    project: str = None
+    token_file: str = None
+
+    def __init__(self, log: logging.Logger, config_file: str = "") -> None: ...
     def inputs_complete(self) -> bool: ...
     def __input_ok(self, input_value: str) -> bool: ...
     def restore_aou_service_account(self) -> str: ...

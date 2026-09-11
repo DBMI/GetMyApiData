@@ -1,8 +1,9 @@
 class Progress:
-    def __init__(self):
-        self.__num_to_do: int = None
-        self.__num_complete: int = None
-        self.__set: bool = False
+    __num_to_do: int = None
+    __num_complete: int = None
+    __set: bool = False
+
+    def __init__(self): ...
     def increment(self, num_performed: int) -> None: ...
     def is_set(self) -> bool: ...
     def num_complete(self) -> int: ...

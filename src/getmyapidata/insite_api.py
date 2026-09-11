@@ -1,6 +1,7 @@
 """
 Contains InSiteAPI class.
 """
+
 import csv
 import logging
 import os
@@ -9,7 +10,6 @@ import time
 from collections import namedtuple
 from collections.abc import Callable
 from pathlib import Path
-from typing import Union
 
 import requests
 
@@ -55,12 +55,7 @@ def make_header(dict1: dict) -> list:
     -------
     list
     """
-    ret = []
-
-    for key in dict1.keys():
-        ret.append(key)
-
-    return ret
+    return list(dict1.keys())
 
 
 class InSiteAPI(threading.Thread):
@@ -82,7 +77,10 @@ class InSiteAPI(threading.Thread):
     """
 
     def __init__(
-        self, api_package: namedtuple, log: logging.Logger, report_fn: Callable = None
+        self,
+        api_package: namedtuple,
+        log: logging.Logger,
+        report_fn: Callable[str] | None = None,
     ):
         """Instantiate an InSiteAPI object.
 
@@ -166,7 +164,7 @@ class InSiteAPI(threading.Thread):
     def __handle_timeouts(
         self,
         resp: requests.Response,
-        next_url: Union[str, None],
+        next_url: str | None,
         headers: dict,
     ) -> dict:
         """
@@ -214,10 +212,8 @@ class InSiteAPI(threading.Thread):
                     else "Unknown status"
                 )
                 raise RuntimeError(
-                    (
-                        f"Server error: {status_code}. "
-                        f"Have made {num_reattempts} reattempts. Exiting."
-                    )
+                    f"Server error: {status_code}. "
+                    f"Have made {num_reattempts} reattempts. Exiting."
                 )
 
             self.__log.debug(f"Status code: {status_code}")
@@ -240,6 +236,7 @@ class InSiteAPI(threading.Thread):
                     if isinstance(resp, requests.Response) and resp.text
                     else "Unknown error"
                 )
+                self.__log.error(resp_text)
 
         return ps_data
 
@@ -305,7 +302,7 @@ class InSiteAPI(threading.Thread):
             self.__log.debug("Calling external progress function.")
             self.__report_fn(self.__progress.percent_complete())
 
-    def __request_response(self, next_url: Union[str, None], headers: dict) -> dict:
+    def __request_response(self, next_url: str | None, headers: dict) -> dict:
         """
         Handles the http request, retries, etc.
 
@@ -318,7 +315,6 @@ class InSiteAPI(threading.Thread):
         -------
         ps_data: dict of retrieved data
         """
-        num_attempts: int = 0
         ps_data: dict = {}
 
         self.__log.debug(f"Requesting {next_url}")
@@ -372,7 +368,7 @@ class InSiteAPI(threading.Thread):
         }
 
         aou_package: AouPackage = self.__api_package.aou_package
-        next_url: Union[str, None] = (
+        next_url: str | None = (
             f"{aou_package.endpoint}?_sort=lastModified&_includeTotal=TRUE"
             f"&_count={num_rows_per_page}&awardee={aou_package.awardee}"
         )
@@ -432,7 +428,7 @@ class InSiteAPI(threading.Thread):
         -------
         next_url: str
         """
-        next_url: Union[str, None] = None
+        next_url: str | None = None
 
         try:
             next_url_info: dict = ps_data["link"][0]
