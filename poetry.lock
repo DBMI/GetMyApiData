@@ -1261,38 +1261,47 @@ files = [
 
 [[package]]
 name = "wxpython"
-version = "4.2.3"
+version = "4.3.2"
 description = "Cross platform GUI toolkit for Python, \"Phoenix\" version"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 markers = "sys_platform != \"linux\""
 files = [
-    {file = "wxPython-4.2.3.tar.gz", hash = "sha256:20d6e0c927e27ced85643719bd63e9f7fd501df6e9a8aab1489b039897fd7c01"},
-    {file = "wxpython-4.2.3-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:80df5158129577b8b1153b9af28ef18cf738a8f200e87c836a1dfc9ca61f86b7"},
-    {file = "wxpython-4.2.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:c8ce9223d256b69815ef2c64842fb6a70303ab46d262b601382adff053779ab3"},
-    {file = "wxpython-4.2.3-cp310-cp310-win32.whl", hash = "sha256:d2cf6a99ec39440298a2c6fbbfd95e386f0ad7d56ae7880553c1ae45709c091a"},
-    {file = "wxpython-4.2.3-cp310-cp310-win_amd64.whl", hash = "sha256:8e729d3110a6ed5f6520371bb3cd5f05f993f6b40d5f80ec6446b8678f2fc2ac"},
-    {file = "wxpython-4.2.3-cp311-cp311-macosx_10_10_x86_64.whl", hash = "sha256:0a66b0d6fe1d7e8e133fdfdee3cae95f70cc433929f36af08f377e103584f49c"},
-    {file = "wxpython-4.2.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:84a01d90c4514d738a05d9045f62b1f1850fbe8d967b4ae545ba090e74cb1216"},
-    {file = "wxpython-4.2.3-cp311-cp311-win32.whl", hash = "sha256:4e5028d7092701ab20b3bef4547d6a7d528d82f12192d72595eeb98b2ebe6364"},
-    {file = "wxpython-4.2.3-cp311-cp311-win_amd64.whl", hash = "sha256:9040fe6ae7e0fd1b33c7020c392a08f94d205614a24e23b9c7a3a74a9836140d"},
-    {file = "wxpython-4.2.3-cp311-cp311-win_arm64.whl", hash = "sha256:39bd411bcdf60d0e06d4ea8a5129e75c37e31d024906a92a91f6690564a35cc3"},
-    {file = "wxpython-4.2.3-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:c007b153ebf74a8429789a5dcb93c76b3901c531b1413695fdb96f222ec207fc"},
-    {file = "wxpython-4.2.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a7c95c385895b94b4784a78c06a1626329c3552fcc47a78ab88f0a02ffe1e2db"},
-    {file = "wxpython-4.2.3-cp312-cp312-win32.whl", hash = "sha256:361db46442376ba1cae4ce9f8fab4081b4d085458f973b4c10b68e04492067ad"},
-    {file = "wxpython-4.2.3-cp312-cp312-win_amd64.whl", hash = "sha256:9231853d8a15b0610a6153cbef65f392164c17f234c65916df499619f7e75bd9"},
-    {file = "wxpython-4.2.3-cp312-cp312-win_arm64.whl", hash = "sha256:e5c413a592b355bf3a6705a73051977c8c2558fd4a3d38a6a8b428bdccbabc77"},
-    {file = "wxpython-4.2.3-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:718a1560e341b5c4755fe9e8a431a1c6796a9d742a4bfce7ebd90d8a71ac0dd4"},
-    {file = "wxpython-4.2.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:a1a367e4242ae83aedbaf2728f622be8ee7aec4721eb4254fe8cf2d86f893bc5"},
-    {file = "wxpython-4.2.3-cp313-cp313-win32.whl", hash = "sha256:676aeb82d64d3d3cb94210e882a508bb1013de5fb55917f54f8dd2c1483f9110"},
-    {file = "wxpython-4.2.3-cp313-cp313-win_amd64.whl", hash = "sha256:dac14ea1b04d90b403414f0401704beecae0d3e7143755a20da0ac2cfec02bf9"},
-    {file = "wxpython-4.2.3-cp313-cp313-win_arm64.whl", hash = "sha256:81c551460392040fddbf2ced6e477a0b842b8a1598c68c5c7bc5580d373cf108"},
-    {file = "wxpython-4.2.3-cp39-cp39-macosx_10_10_x86_64.whl", hash = "sha256:0b1b5ac5ced6bc46a4bf9041d16b3e35373a5a0c1dddac9384b59c43d06cc294"},
-    {file = "wxpython-4.2.3-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:0f73aebf960f0ec6961454841deed242c2d852066ab2c538e617c5eabd95bd7b"},
-    {file = "wxpython-4.2.3-cp39-cp39-win32.whl", hash = "sha256:23afd08aa530a5ede0bcee0526ce185e38e28374ef5c3d2f65f058c1d7204f67"},
-    {file = "wxpython-4.2.3-cp39-cp39-win_amd64.whl", hash = "sha256:f9d5a08199adb8e66ac15bdd494b398f5fa53e7a31ecd9dc07f522265d61aa47"},
+    {file = "wxpython-4.3.2-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:9a742d3266347eaba4b982034948093f0be6ddac5e58af5fee9d77d2c049936b"},
+    {file = "wxpython-4.3.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:f1fbd763bfac9d3cb953c26411e5ffc705cd9e7b7dd2f6b4f118df177007f71a"},
+    {file = "wxpython-4.3.2-cp310-cp310-win32.whl", hash = "sha256:39931a07e82ad62b41cbf035bfed1076d05b0422a45269f6c77e07c25b0d17c6"},
+    {file = "wxpython-4.3.2-cp310-cp310-win_amd64.whl", hash = "sha256:649cb23d5b817cd28cd54f9504a8509a73628b9063a1f7f20bca32311dd900f0"},
+    {file = "wxpython-4.3.2-cp311-cp311-macosx_10_10_x86_64.whl", hash = "sha256:2f32b4aaa3346850990e8533ea3fe04c3e18a13ba53caa34f795d43b0e5a61c8"},
+    {file = "wxpython-4.3.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:2de0eaf8e5e71d0d7ed93e6b87ec48541ccf2f6d7f8a81176749d9626b3c88d2"},
+    {file = "wxpython-4.3.2-cp311-cp311-win32.whl", hash = "sha256:f259463480da400b59e3b21bee45462e4550ea8ca255721364b16ea55e8c71f3"},
+    {file = "wxpython-4.3.2-cp311-cp311-win_amd64.whl", hash = "sha256:4bb971389d7d27c501611fa95d328c8856f58e319882da9ecf3ca845ccd0481d"},
+    {file = "wxpython-4.3.2-cp311-cp311-win_arm64.whl", hash = "sha256:81bb49128c537a0cdefea7c90cfa2c70e8411dd718e09a3e82984ace652a5e48"},
+    {file = "wxpython-4.3.2-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:5de738a18af7887b26a7e4d014439fda1cb4cd74af7f916b51d113ca78ecbf63"},
+    {file = "wxpython-4.3.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:d84c9a1e3dcb3d6c3ed36d0cd30f8a4840de4aea34fb25a6bceb6969b907c840"},
+    {file = "wxpython-4.3.2-cp312-cp312-win32.whl", hash = "sha256:610eafacc6cbefeddf64c501e3a6de78f94a27ab4be90c23673d7afa3c01f9bd"},
+    {file = "wxpython-4.3.2-cp312-cp312-win_amd64.whl", hash = "sha256:6973dd8f17b8c18b4cc452d22fd02c05253ea65a0714c55904713d20189d1be8"},
+    {file = "wxpython-4.3.2-cp312-cp312-win_arm64.whl", hash = "sha256:c12b828914a162754f96927cc5598f8f62490fc1da2dd87423cae2c1842602a7"},
+    {file = "wxpython-4.3.2-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:29beb69852278de27834b529bdf9b9b229bfb1bb765831b94b881f8edc3629e0"},
+    {file = "wxpython-4.3.2-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:b77dc6c4932d1404f0816a60273db33905034a833ba572e74d13d039b586460b"},
+    {file = "wxpython-4.3.2-cp313-cp313-win32.whl", hash = "sha256:6108b0515e4f2b6f8fbc1513253b746775cb0b33020054803175a6c7899aedde"},
+    {file = "wxpython-4.3.2-cp313-cp313-win_amd64.whl", hash = "sha256:9ef2cec75f570ac09fbcfe31cd668bbf122dc650a2c43a9016aba668c557c725"},
+    {file = "wxpython-4.3.2-cp313-cp313-win_arm64.whl", hash = "sha256:100d532ddaf457e21421f69fbcaf63d6403dc10d70ca80c1726152aaf4967856"},
+    {file = "wxpython-4.3.2-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:2c60d38f3d4ee79b753805a66aa62cbde721f8a12aea20747508500e41939751"},
+    {file = "wxpython-4.3.2-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:f333fb08b738721ecc8ed69d2aea296875a9ff2991febcc8c06c0b8236f48067"},
+    {file = "wxpython-4.3.2-cp314-cp314-win32.whl", hash = "sha256:71db87ca19d0c629f407431387044d56d227d62335d21f9c1ecd38a1000ebda9"},
+    {file = "wxpython-4.3.2-cp314-cp314-win_amd64.whl", hash = "sha256:03c20c625acd9bc97f1fbe12db8ba74c35a20306c1ae04480d4c4c2af62ca499"},
+    {file = "wxpython-4.3.2-cp314-cp314-win_arm64.whl", hash = "sha256:8ef1bca30118e11926f3e19d5fab9f9720b795bf674cf5482989bca5399fc736"},
+    {file = "wxpython-4.3.2-cp315-cp315-macosx_10_15_x86_64.whl", hash = "sha256:93eb66ade8a8da17009cd48b336ac3900c892047a051b8bdbc97a686a1fe7f4a"},
+    {file = "wxpython-4.3.2-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:5ce08b7086957d5d70abcf36544427be2b92003181811ea8737d428aa3c321d4"},
+    {file = "wxpython-4.3.2-cp315-cp315-win32.whl", hash = "sha256:ee020117de744d57c125cad214debfc1fe91fec659b9a259676a948c004d1637"},
+    {file = "wxpython-4.3.2-cp315-cp315-win_amd64.whl", hash = "sha256:e9c5bedb76ca280cfc568d657e0daadfbb9a0151022db5e430bcddd291f39069"},
+    {file = "wxpython-4.3.2-cp315-cp315-win_arm64.whl", hash = "sha256:7d9be0748e5c10fae1db10ee910fa594e6d5db1fac406c008f566e13ea89e92c"},
+    {file = "wxpython-4.3.2.tar.gz", hash = "sha256:5531baa9344488a15081a6b2eaeb67af047d12a814cf657c082360ccc37204fb"},
 ]
+
+[package.dependencies]
+numpy = "*"
 
 [[package]]
 name = "yarl"
@@ -1416,4 +1425,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12, <4.0"
-content-hash = "fa3e033b7cf0d54d58b08800d863e40996058aa87b927ccb38b395e1ad253263"
+content-hash = "b959e140ee6e4b564dc21d71c93a2ec75eb1f664c36d2511eadd7107f5f2c5ff"
