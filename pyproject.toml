@@ -84,7 +84,8 @@ extra-paths=["/src/getmyapidata/"]
 
 [dependency-groups]
 dev = [
-    "pytest (>=9.1.1,<10.0.0)"
+    "pytest (>=9.1.1,<10.0.0)",
+    "requests_mock"
 ]
 
 [tool.poetry.group.dev.dependencies]

@@ -25,7 +25,7 @@ def test_get_base_path() -> None:
     assert os.path.isdir(base_path)
 
 
-def test_get_exe_path() -> None:
+def test_get_exe_path(logger: logging.Logger) -> None:
     exe_path: str = get_exe_path()
     assert isinstance(exe_path, str)
     assert os.path.isfile(exe_path)
