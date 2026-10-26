@@ -99,7 +99,7 @@ class HealthProConverter:
         self,
         log: logging.Logger,
         data_directory: str,
-        status_fn: Callable[str] | None = None,
+        status_fn: Callable[[str], None] | None = None,
     ) -> None:
         """Instantiate a HealthProConverter object
 
