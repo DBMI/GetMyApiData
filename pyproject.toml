@@ -81,3 +81,11 @@ getmyapidata = "src.__main__:main"
 
 [tool.pylint.main]
 extra-paths=["/src/getmyapidata/"]
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)"
+]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "9.1.1"  # Or your preferred version
