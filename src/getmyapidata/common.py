@@ -20,7 +20,11 @@ else:
         pass
 
 
-import win32api
+if sys.platform == "win32":
+    import win32api
+else:
+    # Fallback or Mock object for Linux test environments
+    win32api = None
 
 
 def ensure_path_possible(filename: str, log: logging.Logger) -> bool:
