@@ -15,7 +15,7 @@ from src.getmyapidata.splash import MySplashScreen
     sys.platform == "linux" or sys.platform == "linux2",
     reason="Requires Windows GUI environment",
 )
-def test_instantiation() -> None:
+def test_instantiation_windows() -> None:
     app: wx.App = wx.App(redirect=False)
     splash: MySplashScreen = MySplashScreen("../UCSD_school_of_medicine.png")
     splash.Show()
