@@ -35,19 +35,24 @@ jobs:
   pre-commit:
     name: Run Pre-Commit Hooks
     runs-on: ubuntu-latest
-    needs: [actionlint, lint-cruft]
+    needs: [ actionlint, lint-cruft ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-# Inject the official pre-compiled wheel directly into the runner's environment
+      # Inject the official pre-compiled wheel directly into the runner's environment
       - name: Pre-install Linux wxPython Wheel
-        run: pip install https://wxpython.org
+        run: pip install https://github.com/wxWidgets/Phoenix/releases/download/wxPython-4.3.2/wxpython-4.3.2+ubuntu2204-cp312-cp312-linux_x86_64.whl
 
-# Poetry will see wxpython is already installed in the environment and skip trying to build it from PyPI
+      # Poetry will see wxpython is already installed in the environment and skip trying to build it from PyPI
       - name: Install Project Dependencies
         run: poetry install
 
