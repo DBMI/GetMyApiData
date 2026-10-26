@@ -10,7 +10,16 @@ import sys
 import tempfile
 from pathlib import Path
 
-import pywintypes
+if sys.platform == "win32":
+    import pywintypes
+
+    PyWinError = pywintypes.error
+else:
+    # Create a dummy exception class for Linux environments
+    class PyWinError(Exception):
+        pass
+
+
 import win32api
 
 
@@ -122,7 +131,7 @@ def get_exe_version(log: logging.Logger) -> str:
             f"{win32api.LOWORD(ls)}"
         )
         return version
-    except pywintypes.error as e:  # pylint: disable=no-member
+    except PyWinError as e:  # pylint: disable=no-member
         ver_from_file: str = parse_version_file()
 
         if ver_from_file:
