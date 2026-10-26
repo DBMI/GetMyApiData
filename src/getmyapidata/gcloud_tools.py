@@ -96,7 +96,7 @@ class GCloudTools(threading.Thread):
         self,
         aou_package: AouPackage,
         log: logging.Logger,
-        status_fn: Callable[str] | None = None,
+        status_fn: Callable[[str], None] | None = None,
     ):
         """
         Create instance of GCloudTools class.

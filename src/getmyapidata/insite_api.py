@@ -80,7 +80,7 @@ class InSiteAPI(threading.Thread):
         self,
         api_package: namedtuple,
         log: logging.Logger,
-        report_fn: Callable[str] | None = None,
+        report_fn: Callable[[str], None] | None = None,
     ):
         """Instantiate an InSiteAPI object.
 
