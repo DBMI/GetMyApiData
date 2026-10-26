@@ -44,10 +44,12 @@ jobs:
         uses: snok/install-poetry@v1
 
       - name: Pre-install Linux wxPython Wheel
+# Inject the official pre-compiled wheel directly into the runner's environment
         run: |
           pip install https://wxpython.org
 
       - name: Install Project Dependencies
+# Poetry will see wxpython is already installed in the environment and skip trying to build it from PyPI
         run: |
           poetry install
 
