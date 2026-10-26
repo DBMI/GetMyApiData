@@ -111,7 +111,6 @@ files = [
 [package.dependencies]
 aiohappyeyeballs = ">=2.5.0"
 aiosignal = ">=1.4.0"
-async-timeout = {version = ">=4.0,<6.0", markers = "python_version < \"3.11\""}
 attrs = ">=17.3.0"
 frozenlist = ">=1.1.1"
 multidict = ">=4.5,<7.0"
@@ -167,19 +166,6 @@ six = ">=1.12.0"
 [package.extras]
 astroid = ["astroid (>=1,<2) ; python_version < \"3\"", "astroid (>=2,<4) ; python_version >= \"3\""]
 test = ["astroid (>=1,<2) ; python_version < \"3\"", "astroid (>=2,<4) ; python_version >= \"3\"", "pytest"]
-
-[[package]]
-name = "async-timeout"
-version = "5.0.1"
-description = "Timeout context manager for asyncio programs"
-optional = false
-python-versions = ">=3.8"
-groups = ["main"]
-markers = "python_version == \"3.10\""
-files = [
-    {file = "async_timeout-5.0.1-py3-none-any.whl", hash = "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c"},
-    {file = "async_timeout-5.0.1.tar.gz", hash = "sha256:d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3"},
-]
 
 [[package]]
 name = "asyncio"
@@ -372,25 +358,6 @@ docs = ["Sphinx (==4.5.0)", "py-cord (==2.0.0b7)", "sphinx-rtd-theme (==1.0.0)",
 voice = ["youtube-dl"]
 
 [[package]]
-name = "exceptiongroup"
-version = "1.3.0"
-description = "Backport of PEP 654 (exception groups)"
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-markers = "python_version == \"3.10\""
-files = [
-    {file = "exceptiongroup-1.3.0-py3-none-any.whl", hash = "sha256:4d111e6e0c13d0644cad6ddaa7ed0261a0b36971f6d23e7ec9b4b9097da78a10"},
-    {file = "exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88"},
-]
-
-[package.dependencies]
-typing-extensions = {version = ">=4.6.0", markers = "python_version < \"3.13\""}
-
-[package.extras]
-test = ["pytest (>=6)"]
-
-[[package]]
 name = "executing"
 version = "2.0.1"
 description = "Get the currently executing AST node of a frame, and other information"
@@ -546,7 +513,6 @@ files = [
 [package.dependencies]
 colorama = {version = "*", markers = "sys_platform == \"win32\""}
 decorator = "*"
-exceptiongroup = {version = "*", markers = "python_version < \"3.11\""}
 jedi = ">=0.16"
 matplotlib-inline = "*"
 pexpect = {version = ">4.3", markers = "sys_platform != \"win32\""}
@@ -734,9 +700,6 @@ files = [
     {file = "multidict-6.6.3.tar.gz", hash = "sha256:798a9eb12dab0a6c2e29c1de6f3468af5cb2da6053a20dfa3344907eed0937cc"},
 ]
 
-[package.dependencies]
-typing-extensions = {version = ">=4.1.0", markers = "python_version < \"3.11\""}
-
 [[package]]
 name = "numpy"
 version = "1.26.4"
@@ -831,11 +794,7 @@ files = [
 ]
 
 [package.dependencies]
-numpy = [
-    {version = ">=1.22.4,<2", markers = "python_version < \"3.11\""},
-    {version = ">=1.23.2,<2", markers = "python_version == \"3.11\""},
-    {version = ">=1.26.0,<2", markers = "python_version >= \"3.12\""},
-]
+numpy = {version = ">=1.26.0,<2", markers = "python_version >= \"3.12\""}
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
 tzdata = ">=2022.1"
@@ -1307,6 +1266,7 @@ description = "Cross platform GUI toolkit for Python, \"Phoenix\" version"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "sys_platform != \"linux\""
 files = [
     {file = "wxPython-4.2.3.tar.gz", hash = "sha256:20d6e0c927e27ced85643719bd63e9f7fd501df6e9a8aab1489b039897fd7c01"},
     {file = "wxpython-4.2.3-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:80df5158129577b8b1153b9af28ef18cf738a8f200e87c836a1dfc9ca61f86b7"},
@@ -1333,10 +1293,6 @@ files = [
     {file = "wxpython-4.2.3-cp39-cp39-win32.whl", hash = "sha256:23afd08aa530a5ede0bcee0526ce185e38e28374ef5c3d2f65f058c1d7204f67"},
     {file = "wxpython-4.2.3-cp39-cp39-win_amd64.whl", hash = "sha256:f9d5a08199adb8e66ac15bdd494b398f5fa53e7a31ecd9dc07f522265d61aa47"},
 ]
-
-[package.dependencies]
-numpy = {version = "*", markers = "python_version >= \"3.0\" and python_version < \"3.12\""}
-typing-extensions = {version = "*", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "yarl"
@@ -1459,5 +1415,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.10, <4.0"
-content-hash = "fd8945a2121250cf8a0804125bb4ea3263ff5ef0df50ee2bdb4776913c8d48e9"
+python-versions = "^3.12, <4.0"
+content-hash = "fa3e033b7cf0d54d58b08800d863e40996058aa87b927ccb38b395e1ad253263"
