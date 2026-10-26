@@ -45,12 +45,10 @@ jobs:
 
       - name: Pre-install Linux wxPython Wheel
         run: |
-          # Inject the official pre-compiled wheel directly into the runner's environment
           pip install https://wxpython.org
 
       - name: Install Project Dependencies
         run: |
-          # Poetry will see wxpython is already installed in the environment and skip trying to build it from PyPI
           poetry install
 
       - name: Install and Run Pre-commit
