@@ -1,1 +1,3 @@
-import getmyapidata as getmyapidata
+from . import getmyapidata
+
+__all__ = ["getmyapidata"]
