@@ -9,3 +9,4 @@ config_real.ini
 /dist/
 /htmlcov/
 /keys/
+/__pycache__/
