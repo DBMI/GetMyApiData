@@ -82,4 +82,4 @@ jobs:
 
       # Just run the tests using the virtual environment your local action created
       - name: Run tests
-        run: poetry run pytest -k "not windows"
+        run: poetry run pytest
