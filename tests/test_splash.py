@@ -12,7 +12,7 @@ from src.getmyapidata.splash import MySplashScreen
 
 
 @pytest.mark.skipif(
-    sys.platform == "linux" or sys.platform == "linux2",
+    "linux" in sys.platform,
     reason="Requires Windows GUI environment",
 )
 def test_instantiation_windows() -> None:
