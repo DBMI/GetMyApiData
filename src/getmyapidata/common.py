@@ -58,7 +58,7 @@ def ensure_path_possible(filename: str, log: logging.Logger) -> bool:
         os.rmdir(directory_name)
         return True
     except OSError as e:
-        log.error(f"Error ensuring directory '{directory_name} because: {e}")
+        log.debug(f"Error ensuring directory '{directory_name} because: {e}")
         print(f"Error ensuring directory '{directory_name}': {e}")
         return False
 
