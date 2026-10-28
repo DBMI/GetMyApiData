@@ -43,9 +43,7 @@ def convert_date(raw_date: pandas.Series) -> pandas.Series:
     -------
     date_converted: pandas.Series
     """
-    date_temp: pandas.Series = pandas.to_datetime(
-        raw_date, errors="coerce"
-    ).datetime.tz_localize("US/Pacific")
+    date_temp: pandas.Series = pandas.to_datetime(raw_date, errors="coerce")
     date_converted: pandas.Series = date_temp.dt.strftime("%Y-%m-%dT%H:%M:%S")
     return date_converted
 
