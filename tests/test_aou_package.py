@@ -71,9 +71,7 @@ def test_get_config(logger: logging.Logger, fake_config_file: Path) -> None:
     assert isinstance(cp["AoU"]["endpoint"], str)
     assert cp["AoU"]["endpoint"] == r"https://test.com"
     assert isinstance(cp["InSite API"]["data_directory"], str)
-    assert cp["InSite API"]["data_directory"] == str(
-        Path(r"C:\\") / "tmp" / "not_there"
-    )
+    assert cp["InSite API"]["data_directory"] == str(Path(r"C:/") / "tmp" / "not_there")
     assert isinstance(cp["Logon"]["aou_service_account"], str)
     assert (
         cp["Logon"]["aou_service_account"]
@@ -85,11 +83,11 @@ def test_get_config(logger: logging.Logger, fake_config_file: Path) -> None:
     assert cp["Logon"]["project"] == "all-of-us-ops-data-api-prod"
     assert isinstance(cp["Logon"]["token_file"], str)
     assert cp["Logon"]["token_file"] == str(
-        Path(r"C:\\") / "tmp" / "not_there" / "key.json"
+        Path(r"C:/") / "tmp" / "not_there" / "key.json"
     )
     assert isinstance(cp["Logs"]["log_directory"], str)
     assert cp["Logs"]["log_directory"] == str(
-        Path(r"C:\\") / "tmp" / "not_there" / "logs"
+        Path(r"C:/") / "tmp" / "not_there" / "logs"
     )
 
 
