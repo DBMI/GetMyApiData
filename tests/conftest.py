@@ -17,7 +17,7 @@ ApiRequestPackage = namedtuple("ApiRequestPackage", ["aou_package", "token"])
 @pytest.fixture(name="real_aou_package")
 def aou_package(logger) -> AouPackage:
     # Copy a real config file.
-    config_file_real: str = os.path.join(os.path.dirname(__file__), "config_real.ini")
+    config_file_real: str = str(Path(os.path.dirname(__file__)) / "config_real.ini")
 
     if not os.path.exists(config_file_real):
         pytest.fail(f"Missing real config file '{config_file_real}'")
@@ -52,7 +52,7 @@ def fake_config_file(tmp_path) -> Path:
     """
     config_file = tmp_path / "config.ini"
 
-    path_not_real: str = r"C:\tmp\not_there"
+    path_not_real: str = str(Path(r"C:\\") / "tmp" / "not_there")
     config: ConfigParser = ConfigParser()
     config["AoU"] = {
         "awardee": "dummy_awardee",
@@ -65,9 +65,9 @@ def fake_config_file(tmp_path) -> Path:
         "aou_service_account": "awardee-not_real@all-of-us-ops-data-api-prod.iam.gserviceaccount.com",
         "pmi_account": "nobody@pmi-ops.org",
         "project": "all-of-us-ops-data-api-prod",
-        "token_file": os.path.join(path_not_real, "key.json"),
+        "token_file": str(Path(path_not_real) / "key.json"),
     }
-    config["Logs"] = {"log_directory": os.path.join(path_not_real, "logs")}
+    config["Logs"] = {"log_directory": str(Path(path_not_real) / "logs")}
 
     with open(config_file, "w", encoding="utf-8") as configfile:
         config.write(configfile)
@@ -96,9 +96,9 @@ def fake_config_file_blank_input(tmp_path) -> Path:
         "aou_service_account": "    ",
         "pmi_account": "nobody@pmi-ops.org",
         "project": "all-of-us-ops-data-api-prod",
-        "token_file": os.path.join(path_not_real, "key.json"),
+        "token_file": str(Path(path_not_real) / "key.json"),
     }
-    config["Logs"] = {"log_directory": os.path.join(path_not_real, "logs")}
+    config["Logs"] = {"log_directory": str(Path(path_not_real) / "logs")}
 
     with open(config_file, "w", encoding="utf-8") as configfile:
         config.write(configfile)
@@ -127,9 +127,9 @@ def fake_config_file_null_input(tmp_path) -> Path:
         "aou_service_account": "",
         "pmi_account": "nobody@pmi-ops.org",
         "project": "all-of-us-ops-data-api-prod",
-        "token_file": os.path.join(path_not_real, "key.json"),
+        "token_file": str(Path(path_not_real) / "key.json"),
     }
-    config["Logs"] = {"log_directory": os.path.join(path_not_real, "logs")}
+    config["Logs"] = {"log_directory": str(Path(path_not_real) / "logs")}
 
     with open(config_file, "w", encoding="utf-8") as configfile:
         config.write(configfile)
@@ -139,7 +139,7 @@ def fake_config_file_null_input(tmp_path) -> Path:
 
 @pytest.fixture(name="fake_data_directory")
 def fake_data_directory(tmp_path) -> str:
-    return tmp_path / "test_data"
+    return str(tmp_path / "test_data")
 
 
 @pytest.fixture(name="fake_json")
@@ -351,9 +351,9 @@ def logger() -> logging.Logger:
     right_here: str = os.path.dirname(__file__)
 
     if not "tests" in right_here:
-        right_here = os.path.join(right_here, "tests")
+        right_here = str(Path(right_here) / "tests")
 
-    log_filename: str = os.path.join(right_here, "testing.log")
+    log_filename: str = str(Path(right_here) / "testing.log")
 
     logger = logging.getLogger(log_filename)
 
@@ -391,8 +391,8 @@ def pandas_series() -> pandas.Series:
 
 @pytest.fixture(name="fake_patient_dataframe")
 def patient_dataframe() -> pandas.DataFrame:
-    test_csv_file: str = os.path.join(
-        os.path.dirname(__file__), "TEST_participant_list.csv"
+    test_csv_file: str = str(
+        Path(os.path.dirname(__file__)) / "TEST_participant_list.csv"
     )
     return pandas.read_csv(test_csv_file)
 
