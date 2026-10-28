@@ -52,7 +52,7 @@ def fake_config_file(tmp_path) -> Path:
     """
     config_file = tmp_path / "config.ini"
 
-    path_not_real: str = str(Path(r"C:\\") / "tmp" / "not_there")
+    path_not_real: str = str(Path(r"C:/") / "tmp" / "not_there")
     config: ConfigParser = ConfigParser()
     config["AoU"] = {
         "awardee": "dummy_awardee",
