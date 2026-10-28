@@ -91,3 +91,8 @@ dev = [
 # Comment
 [tool.poetry.group.dev.dependencies]
 pytest = "9.1.1"  # Or your preferred version
+
+[tool.pytest.ini_options]
+markers = [
+    "localonly: tests that should only run in a local development environment",
+]
