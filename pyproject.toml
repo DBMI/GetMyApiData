@@ -58,6 +58,7 @@ pytz = "2024.1"
 # Windows-only baseline dependency
 pywin32 = { version = "^306", markers = "sys_platform == 'win32'" }
 pywin32-ctypes = "0.2.3"
+pyyaml = "6.0.3"
 requests = "2.32.4"
 setuptools = "80.9.0"
 six = "1.16.0"
