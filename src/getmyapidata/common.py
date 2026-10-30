@@ -84,22 +84,28 @@ def find_time_or_date_columns(df: pandas.DataFrame) -> list[str]:
     return authored_cols + time_cols
 
 
-def get_config_path() -> Path:
+def resolve_path(file_name: str) -> str:
     """
-    Returns the config directory.
+    Returns the Path to a config file.
+
+    Parameters
+    ----------
+    file_name: str
 
     Returns
     -------
     config_path: Path
     """
 
-    if getattr(sys, "frozen", False):
-        # Running as a compiled PyInstaller .exe
-        # sys.executable is the path to the actual .exe file
-        return Path(sys.executable).resolve().parent
-    else:
-        # Running as a standard python script during development.
-        return Path(__file__).resolve().parent.parent.parent / "config"
+    """Get the absolute path to a resource, compatible with PyInstaller bundle."""
+    if hasattr(sys, "_MEIPASS"):
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        return os.path.join(sys._MEIPASS, file_name)
+
+    # Standard development path
+    here: Path = Path(os.path.abspath("."))
+    config_dir: Path = here.parent / "config"
+    return str(config_dir / file_name)
 
 
 def get_executable_path() -> Path:
