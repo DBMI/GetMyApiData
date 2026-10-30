@@ -21,7 +21,7 @@ def test_config_path() -> None:
 def test_find_time_date_columns(fake_patient_dataframe) -> None:
     time_date_columns: list = find_time_or_date_columns(fake_patient_dataframe)
     assert isinstance(time_date_columns, list)
-    assert len(time_date_columns) == 12
+    assert len(time_date_columns) == 16
 
 
 def test_get_exe_path(logger: logging.Logger) -> None:
