@@ -92,3 +92,6 @@ dev = [
 # Comment
 [tool.poetry.group.dev.dependencies]
 pytest = "9.1.1"  # Or your preferred version
+
+[tool.setuptools.package-data]
+projectname = ["config/*.yaml"]
