@@ -7,7 +7,6 @@ import json
 import logging
 import os
 from collections.abc import Callable
-from pathlib import Path
 
 import numpy as np
 import pandas
@@ -15,7 +14,7 @@ import yaml
 
 from src.getmyapidata.common import (
     find_time_or_date_columns,
-    get_config_path,
+    resolve_path,
 )
 from src.getmyapidata.my_logging import setup_logging
 
@@ -109,8 +108,7 @@ def read_column_mappings(logger: logging.Logger) -> dict:
     columns: dict
     """
     mapping: dict = {}
-    config_dir: Path = get_config_path()
-    config_file: Path = config_dir / "column_mapping.yaml"
+    config_file: str = resolve_path("column_mapping.yaml")
 
     try:
         with open(config_file) as file:
@@ -137,8 +135,7 @@ def read_output_columns(logger: logging.Logger) -> list[str]:
     columns: list[str]
     """
     columns: dict
-    config_dir: Path = get_config_path()
-    config_file: Path = config_dir / "additional_output_columns.yaml"
+    config_file: str = resolve_path("additional_output_columns.yaml")
 
     try:
         with open(config_file) as file:

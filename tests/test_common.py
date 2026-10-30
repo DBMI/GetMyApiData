@@ -8,14 +8,14 @@ from pathlib import Path
 
 from src.getmyapidata.common import (
     find_time_or_date_columns,
-    get_config_path,
     get_executable_path,
+    resolve_path,
 )
 
 
 def test_config_path() -> None:
-    cp: Path = get_config_path()
-    assert isinstance(cp, Path)
+    cp: str = resolve_path("column_mapping.yaml")
+    assert isinstance(cp, str)
 
 
 def test_find_time_date_columns(fake_patient_dataframe) -> None:
