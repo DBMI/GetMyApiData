@@ -7,10 +7,16 @@ import json
 import logging
 import os
 from collections.abc import Callable
+from pathlib import Path
 
 import numpy as np
 import pandas
+import yaml
 
+from src.getmyapidata.common import (
+    find_time_or_date_columns,
+    get_config_path,
+)
 from src.getmyapidata.my_logging import setup_logging
 
 
@@ -89,6 +95,63 @@ def convert_patient_status(df: pandas.DataFrame) -> pandas.DataFrame:
     return df
 
 
+def read_column_mappings(logger: logging.Logger) -> dict:
+    """
+    Find and read the .yaml file that defines the translation between
+    InSite API column names and the names we'll export.
+
+    Parameters
+    ----------
+    logger: logging.Logger object
+
+    Returns
+    -------
+    columns: dict
+    """
+    mapping: dict = {}
+    config_dir: Path = get_config_path()
+    config_file: Path = config_dir / "column_mapping.yaml"
+
+    try:
+        with open(config_file) as file:
+            mapping = yaml.safe_load(file)
+    except FileNotFoundError:
+        logger.error(f"File not found at {config_file}.")
+
+    try:
+        return mapping["output_variables"]
+    except KeyError:
+        (logger.error(f"Unable to find 'output_variables' in {config_file}."))
+
+
+def read_output_columns(logger: logging.Logger) -> list[str]:
+    """
+    Find and read the .yaml file that defines the additional columns we'll export.
+
+    Parameters
+    ----------
+    logger: logging.Logger object
+
+    Returns
+    -------
+    columns: list[str]
+    """
+    columns: dict
+    config_dir: Path = get_config_path()
+    config_file: Path = config_dir / "additional_output_columns.yaml"
+
+    try:
+        with open(config_file) as file:
+            columns = yaml.safe_load(file)
+    except FileNotFoundError:
+        logger.error(f"File not found at {config_file}.")
+
+    try:
+        return columns["additional_output_columns"]
+    except KeyError:
+        logger.error(f"Unable to find 'output_columns' in {config_file}.")
+
+
 # pylint: disable=too-few-public-methods
 class HealthProConverter:
     """
@@ -164,27 +227,13 @@ class HealthProConverter:
         #
         #   FORMAT DATE COLUMNS
         #
-        participant_match["clinicPhysicalMeasurementsFinalizedTimeFormatted"] = (
-            convert_date(participant_match["clinicPhysicalMeasurementsFinalizedTime"])
-        )
-        participant_match["consentForElectronicHealthRecordsAuthoredFormatted"] = (
-            convert_date(participant_match["consentForElectronicHealthRecordsAuthored"])
-        )
-        participant_match["consentForStudyEnrollmentAuthoredFormatted"] = convert_date(
-            participant_match["consentForStudyEnrollmentAuthored"]
-        )
-        participant_match["deactivationTimeFormatted"] = convert_date(
-            participant_match["deactivationTime"]
-        )
-        participant_match["deceasedAuthoredFormatted"] = convert_date(
-            participant_match["deceasedAuthored"]
-        )
-        participant_match["latestEhrReceiptTimeFormatted"] = convert_date(
-            participant_match["latestEhrReceiptTime"]
-        )
-        participant_match["withdrawalTimeFormatted"] = convert_date(
-            participant_match["withdrawalTime"]
-        )
+        time_date_columns: list = find_time_or_date_columns(participant_match)
+
+        for time_date_column in time_date_columns:
+            formatted_column_name: str = time_date_column + "Formatted"
+            participant_match[formatted_column_name] = convert_date(
+                participant_match[time_date_column]
+            )
 
         # Deactivation status.
         deactivation_map: dict = {
@@ -226,125 +275,26 @@ class HealthProConverter:
         # Add dummy columns.
         participant_match["withdrawalReason"] = "UNSET"
 
-        # Create a new DataFrame and assign columns with new names.
-        hp = pandas.DataFrame(
-            {
-                "Last Name": participant_match["lastName"],
-                "First Name": participant_match["firstName"],
-                "Middle Initial": participant_match["middleName"],
-                "Date of Birth": participant_match["dateOfBirth"],
-                "PMI ID": participant_match["participantId"],
-                "Withdrawal Status": participant_match["withdrawalStatus"],
-                "Withdrawal Date": participant_match["withdrawalTimeFormatted"],
-                "Withdrawal Reason": participant_match["withdrawalReason"],
-                "Deactivation Status": participant_match["deactivationStatus"],
-                "Deactivation Date": participant_match["deactivationTimeFormatted"],
-                "Deceased": participant_match["deceasedStatus"],
-                "Date of Death": participant_match["deceasedAuthoredFormatted"],
-                "Street Address": participant_match["streetAddress"],
-                "Street Address2": participant_match["streetAddress2"],
-                "City": participant_match["city"],
-                "State": participant_match["state"],
-                "Zip": participant_match["zipCode"],
-                "Login Phone": participant_match["phoneNumber"],
-                "Phone": participant_match["phoneNumber"],
-                "Email": participant_match["email"],
-                "Paired Organization": participant_match["organization"],
-                "Physical Measurements Status": participant_match[
-                    "clinicPhysicalMeasurementsStatus"
-                ],
-                "Physical Measurements Completion Date": participant_match[
-                    "clinicPhysicalMeasurementsFinalizedTimeFormatted"
-                ],
-                "Paired Site": participant_match[
-                    "clinicPhysicalMeasurementsFinalizedSite"
-                ],
-                "EHR Consent Status": participant_match[
-                    "consentForElectronicHealthRecords"
-                ],
-                "EHR Consent Date": participant_match[
-                    "consentForElectronicHealthRecordsAuthoredFormatted"
-                ],
-                "Most Recent EHR Receipt": participant_match[
-                    "latestEhrReceiptTimeFormatted"
-                ],
-                "Patient Status: Yes": participant_match["patientStatusYes"],
-                "Patient Status: No": participant_match["patientStatusNo"],
-                "Patient Status: No Access": participant_match["patientStatusNoAccess"],
-                "Patient Status: Unknown": participant_match["patientStatusUnknown"],
-                "Primary Consent Status": participant_match[
-                    "consentForStudyEnrollment"
-                ],
-                "Date of First Primary Consent": participant_match[
-                    "consentForStudyEnrollmentAuthoredFormatted"
-                ],
-                "Primary Consent Date": participant_match[
-                    "consentForStudyEnrollmentAuthoredFormatted"
-                ],
-            },
-            columns=[
-                "Last Name",
-                "First Name",
-                "Middle Initial",
-                "Date of Birth",
-                "PMI ID",
-                "Participant Status",
-                "Core Participant Date",
-                "Withdrawal Status",
-                "Withdrawal Date",
-                "Withdrawal Reason",
-                "Deactivation Status",
-                "Deactivation Date",
-                "Deceased",
-                "Date of Death",
-                "Date of Death Approval",
-                "Participant Origination",
-                "Consent Cohort",
-                "Date of First Primary Consent",
-                "Primary Consent Status",
-                "Primary Consent Date",
-                "Program Update",
-                "Date of Program Update",
-                "EHR Consent Status",
-                "EHR Consent Date",
-                "gRoR Consent Status",
-                "gRoR Consent Date",
-                "Language of Primary Consent",
-                "CABoR Consent Status",
-                "CABoR Consent Date",
-                "Retention Eligible",
-                "Date of Retention Eligibility",
-                "Retention Status",
-                "EHR Data Transfer",
-                "Most Recent EHR Receipt",
-                "Patient Status: Yes",
-                "Patient Status: No",
-                "Patient Status: No Access",
-                "Patient Status: Unknown",
-                "Street Address",
-                "Street Address2",
-                "City",
-                "State",
-                "Zip",
-                "Email",
-                "Login Phone",
-                "Phone",
-                "Required PPI Surveys Complete",
-                "Completed Surveys",
-                "Paired Site",
-                "Paired Organization",
-                "Physical Measurements Status",
-                "Physical Measurements Completion Date",
-                "Samples to Isolate DNA",
-                "Baseline Samples",
-                "Sex",
-                "Gender Identity",
-                "Race/Ethnicity",
-                "Education",
-                "Core Participant Minus PM Date",
-                "Enrollment Site",
-            ],
-        )
+        # Read mapping from input names to output names.
+        mapping: dict = read_column_mappings(self.__log)
+        new_data: dict = {}
+
+        for key, value in mapping.items():
+            try:
+                new_data[key] = participant_match[value]
+            except KeyError:
+                # If this input column name isn't present in participant match, just skip it.
+                pass
+
+        # Merge columns names actually IN the data with the additional columns expected, but remove duplicates.
+        additional_output_columns: list[str] = read_output_columns(self.__log)
+
+        for additional_output_column in additional_output_columns:
+            if additional_output_column not in new_data:
+                new_data[additional_output_column] = None
+
+        # Create a new DataFrame from the data dictionary.
+        hp = pandas.DataFrame(data=new_data)
 
         # Write the modified DataFrame back to a new CSV file, overwriting if necessary.
         if self.__status_fn is not None:
@@ -358,7 +308,7 @@ if __name__ == "__main__":
         log_filename=os.path.join(os.getcwd(), "convert_to_hp_format.log")
     )
     hpc: HealthProConverter = HealthProConverter(
-        data_directory=r"F:\dbmi.data\aou_submission\api_gui_test",
+        data_directory=r"E:\dbmi.data\aou_submission\api_gui_test",
         log=my_log,
         status_fn=None,
     )
