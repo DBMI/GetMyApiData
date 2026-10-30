@@ -6,7 +6,7 @@ a = Analysis(
     pathex=['src/getmyapidata/'],
     binaries=[],
     datas=[('UCSD_school_of_medicine.png', '.'),
-           ('config/*.yaml', 'config'),],
+           ('src/getmyapidata/config/*.yaml', 'config'),],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
