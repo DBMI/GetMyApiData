@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import tempfile
+from importlib import resources
 from pathlib import Path
 
 import pandas
@@ -103,9 +104,8 @@ def resolve_path(file_name: str) -> str:
         return os.path.join(sys._MEIPASS, file_name)
 
     # Standard development path
-    here: Path = Path(os.path.abspath("."))
-    config_dir: Path = here.parent / "config"
-    return str(config_dir / file_name)
+    config_file: str = str(resources.files("getmyapidata.config").joinpath(file_name))
+    return config_file
 
 
 def get_executable_path() -> Path:
