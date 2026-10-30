@@ -25,3 +25,7 @@ def windows_test_installed() -> None:
 
     # Restore to original name.
     os.rename(full_new_file_path, file_path)
+
+
+if __name__ == "__main__":
+    windows_test_installed()

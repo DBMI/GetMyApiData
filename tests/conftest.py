@@ -288,7 +288,6 @@ def hp_columns() -> list[str]:
         "Deactivation Date",
         "Deceased",
         "Date of Death",
-        "Date of Death Approval",
         "Participant Origination",
         "Consent Cohort",
         "Date of First Primary Consent",

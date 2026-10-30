@@ -15,3 +15,7 @@ def windows_test_instantiation() -> None:
     splash.Show()
     time.sleep(1)
     app.Yield()
+
+
+if __name__ == "__main__":
+    windows_test_instantiation()

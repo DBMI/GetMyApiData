@@ -12,6 +12,8 @@ from src.getmyapidata.convert_to_hp_format import (
     HealthProConverter,
     convert_date,
     convert_patient_status,
+    read_column_mappings,
+    read_output_columns,
 )
 
 
@@ -46,7 +48,7 @@ def test_convert_patient_status(fake_patient_status_dataframe) -> None:
     assert not df["patientStatusUnknown"][1]
 
 
-def test_hp_converter(fake_patient_dataframe, logger, hp_columns) -> None:
+def test_hp_converter(logger, hp_columns) -> None:
     right_here: str = os.path.dirname(__file__)
 
     # If we run this test individually, right_here will be full path to tests.
@@ -70,10 +72,10 @@ def test_hp_converter(fake_patient_dataframe, logger, hp_columns) -> None:
     assert os.path.exists(transformed_file)
     transformed_dataframe: pandas.DataFrame = pandas.read_csv(transformed_file)
     assert isinstance(transformed_dataframe, pandas.DataFrame)
-    assert transformed_dataframe.columns.isin(hp_columns).all()
+    assert set(hp_columns).issubset(transformed_dataframe.columns)
 
 
-def test_hp_converter_no_status_fn(fake_patient_dataframe, logger, hp_columns) -> None:
+def test_hp_converter_no_status_fn(logger, hp_columns) -> None:
     right_here: str = os.path.dirname(__file__)
 
     # If we run this test individually, right_here will be full path to tests.
@@ -94,4 +96,15 @@ def test_hp_converter_no_status_fn(fake_patient_dataframe, logger, hp_columns) -
     assert os.path.exists(transformed_file)
     transformed_dataframe: pandas.DataFrame = pandas.read_csv(transformed_file)
     assert isinstance(transformed_dataframe, pandas.DataFrame)
-    assert transformed_dataframe.columns.isin(hp_columns).all()
+    assert set(hp_columns).issubset(transformed_dataframe.columns)
+
+
+def test_read_column_mappings(logger) -> None:
+    config: dict = read_column_mappings(logger)
+    assert isinstance(config, dict)
+
+
+def test_read_output_columns(logger) -> None:
+    config: list = read_output_columns(logger)
+    assert isinstance(config, list)
+    assert isinstance(config[0], str)

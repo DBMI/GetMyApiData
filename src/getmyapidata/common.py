@@ -10,6 +10,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pandas
+
 if sys.platform == "win32":
     import pywintypes
 
@@ -63,40 +65,52 @@ def ensure_path_possible(filename: str, log: logging.Logger) -> bool:
         return False
 
 
-def get_base_path() -> str:
+def find_time_or_date_columns(df: pandas.DataFrame) -> list[str]:
     """
-    Adapts to running either in development OR in executable format.
+    Identify columns ending in "Authored" or "Time"
+
+    Parameters
+    ----------
+    df: DataFrame
 
     Returns
     -------
-    base_path: str      Where to find included data or image files.
+    matching_cols: list[str]
+
     """
-    base_path: str
-
-    if getattr(sys, "frozen", False):  # pragma: no cover
-        base_path = sys._MEIPASS  # pylint: disable=W0212
-    else:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-
-    return base_path
+    # Find columns ending with "Authored" or "Time"
+    authored_cols = df.columns[df.columns.str.contains(r"Authored$")].tolist()
+    time_cols = df.columns[df.columns.str.contains(r"Time$")].tolist()
+    return authored_cols + time_cols
 
 
-def get_exe_path() -> str:
+def get_config_path() -> Path:
     """
-    Where to look for the .exe file information
+    Returns the config directory.
 
     Returns
     -------
-    exe_path: str
+    config_path: Path
     """
-    exe_path: str
 
-    if getattr(sys, "frozen", False):  # pragma: no cover
-        exe_path = sys.executable
+    if getattr(sys, "frozen", False):
+        # Running as a compiled PyInstaller .exe
+        # sys.executable is the path to the actual .exe file
+        return Path(sys.executable).resolve().parent
     else:
-        exe_path = os.path.abspath(__file__)
+        # Running as a standard python script during development.
+        return Path(__file__).resolve().parent.parent.parent / "config"
 
-    return exe_path
+
+def get_executable_path() -> Path:
+    """Returns the directory where the .exe or the script is located."""
+    if getattr(sys, "frozen", False):
+        # Running as a compiled PyInstaller .exe
+        # sys.executable is the path to the actual .exe file
+        return Path(sys.executable).resolve()
+    else:
+        # Running as a standard python script during development
+        return Path(__file__).resolve()
 
 
 def get_exe_version(log: logging.Logger) -> str:
@@ -111,17 +125,15 @@ def get_exe_version(log: logging.Logger) -> str:
     -------
     version: str
     """
-    exe_path: str = get_exe_path()
-    log.debug("Found exe path: {exe_path}.")
+    exe_path: Path = get_executable_path()
+    log.debug(f"Found exe path: {exe_path!s}.")
 
     try:  # pragma: no cover
         # Get the full path to the executable.
-        log.debug(f"Getting abspath from {exe_path}.")
-        full_path = os.path.abspath(exe_path)
+        log.debug(f"Getting abspath from {exe_path!s}.")
 
         # Get the file version information.
-        log.debug(f"Requesting version info from {full_path}.")
-        info = win32api.GetFileVersionInfo(full_path, "\\")
+        info = win32api.GetFileVersionInfo(str(exe_path), "\\")
         log.debug(f"Version info: {info}.")
 
         # Extract the major, minor, build, and private parts of the version.
@@ -141,7 +153,7 @@ def get_exe_version(log: logging.Logger) -> str:
         if ver_from_file:
             return ver_from_file
 
-        print(f"Error getting version for {exe_path}: {e}")  # pragma: no cover
+        print(f"Error getting version for {exe_path!s}: {e}")  # pragma: no cover
         return ""  # pragma: no cover
 
 
