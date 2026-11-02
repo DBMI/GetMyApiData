@@ -211,6 +211,10 @@ class InSiteAPI(threading.Thread):
                     if isinstance(resp, requests.Response) and resp.status_code
                     else "Unknown status"
                 )
+                self.__report_fn(
+                    f"Server error: {status_code}. "
+                    f"Have made {num_reattempts} reattempts. Exiting."
+                )
                 raise RuntimeError(
                     f"Server error: {status_code}. "
                     f"Have made {num_reattempts} reattempts. Exiting."
@@ -223,7 +227,7 @@ class InSiteAPI(threading.Thread):
                 ps_data = resp.json()
                 break
             elif resp.status_code == 500:
-                # Server error. Stay in loop so we'll pause & try again.
+                # Server error. Stay in loop; we'll pause & try again.
                 self.__log.error(
                     "Server error: %s. Have made %d attempts.",
                     status_code,
@@ -236,6 +240,7 @@ class InSiteAPI(threading.Thread):
                     if isinstance(resp, requests.Response) and resp.text
                     else "Unknown error"
                 )
+                self.__report_fn(resp_text)
                 self.__log.error(resp_text)
 
         return ps_data
