@@ -184,8 +184,22 @@ class InSiteAPI(threading.Thread):
         ps_data: dict = {}
         self.__log.debug("in __handle_timeouts")
         status_code: str
+        resp_text: str
 
         while True:
+            status_code = (
+                str(resp.status_code)
+                if isinstance(resp, requests.Response) and resp.status_code
+                else "Unknown status"
+            )
+            resp_text = (
+                resp.text
+                if isinstance(resp, requests.Response) and resp.text
+                else "Unknown error"
+            )
+
+            self.__log.debug(f"Status code: {status_code}: {resp_text}.")
+
             if num_reattempts < 2:
                 self.__log.debug(
                     f"Have made {num_reattempts} reattempts. Pausing for another try."
@@ -195,32 +209,15 @@ class InSiteAPI(threading.Thread):
                 try:
                     resp = requests.get(next_url, headers=headers, timeout=60)
                 except requests.exceptions.RequestException:
-                    self.__log.error("API request failed.")
+                    self.__log.error("API request failed. Exiting.")
+                    self.__report_fn("API request failed. Exiting.")
                     raise RuntimeError("API request failed. Exiting.")
 
-                status_code = (
-                    str(resp.status_code)
-                    if isinstance(resp, requests.Response) and resp.status_code
-                    else "Unknown status"
-                )
                 num_reattempts += 1
             else:
                 self.__log.error(f"Have made {num_reattempts} reattempts. Exiting.")
-                status_code = (
-                    str(resp.status_code)
-                    if isinstance(resp, requests.Response) and resp.status_code
-                    else "Unknown status"
-                )
-                self.__report_fn(
-                    f"Server error: {status_code}. "
-                    f"Have made {num_reattempts} reattempts. Exiting."
-                )
-                raise RuntimeError(
-                    f"Server error: {status_code}. "
-                    f"Have made {num_reattempts} reattempts. Exiting."
-                )
-
-            self.__log.debug(f"Status code: {status_code}")
+                self.__report_fn(f"Have made {num_reattempts} reattempts. Exiting.")
+                raise RuntimeError(f"Have made {num_reattempts} reattempts. Exiting.")
 
             if resp.status_code == 200:
                 self.__log.debug(f"Success after {num_reattempts} reattempts.")
@@ -235,13 +232,9 @@ class InSiteAPI(threading.Thread):
                 )
             else:
                 # It's some other code--not likely to be fixed with another attempt.
-                resp_text: str = (
-                    resp.text
-                    if isinstance(resp, requests.Response) and resp.text
-                    else "Unknown error"
-                )
-                self.__report_fn(resp_text)
-                self.__log.error(resp_text)
+                self.__report_fn(f"Status code: {status_code}: {resp_text}.")
+                self.__log.error(f"Status code: {status_code}: {resp_text}.")
+                break
 
         return ps_data
 
