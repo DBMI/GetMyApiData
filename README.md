@@ -45,4 +45,6 @@ Contact Kevin J. Delaney at University of California San Diego: <kjdelaney@healt
 In directory `C:\Users\Kevin.Delaney\PycharmProjects\GetMyApiData`, run `pyinstaller GetMyApiData.spec` to compile the app into the `\dist` folder.
 
 ### Deployment
-From server `medicinedb5p01` open the app's GitHub [Releases](https://github.com/DBMI/GetMyApiData/releases) page; you can upload the `.exe` file into a new release with an updated tag.
+1. Create a new tag from bash command line: `git tag -a v1.3.0-exe -m "Supports new InsiteAPI fields"`
+2. Push this new tag using `git push upstream v1.3.0-exe`
+3. Open the app's GitHub [Releases](https://github.com/DBMI/GetMyApiData/releases) page; you can upload the `.exe` file into a new release with an updated tag.
