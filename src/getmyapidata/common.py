@@ -101,7 +101,7 @@ def resolve_path(file_name: str) -> str:
     """Get the absolute path to a resource, compatible with PyInstaller bundle."""
     if hasattr(sys, "_MEIPASS"):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        return os.path.join(sys._MEIPASS, file_name)
+        return os.path.join(sys._MEIPASS, "config", file_name)
 
     # Standard development path
     config_file: str = str(resources.files("getmyapidata.config").joinpath(file_name))
