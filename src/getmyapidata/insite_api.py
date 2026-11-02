@@ -234,7 +234,7 @@ class InSiteAPI(threading.Thread):
                 # It's some other code--not likely to be fixed with another attempt.
                 self.__report_fn(f"Status code: {status_code}: {resp_text}.")
                 self.__log.error(f"Status code: {status_code}: {resp_text}.")
-                break
+                raise RuntimeError(f"Status code: {status_code}: {resp_text}.")
 
         return ps_data
 
