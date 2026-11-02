@@ -218,7 +218,7 @@ def test_insite_api_other_errors(
     )
 
     with requests_mock.Mocker() as m:
-        # Pretend we NEVER get a 200.
+        # Pretend we NEVER get a 200 and ensure API throws RuntimeError.
         m.register_uri(method="GET", url=fake_url, json=fake_json, status_code=400)
 
         with pytest.raises(RuntimeError):
