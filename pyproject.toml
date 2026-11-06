@@ -57,7 +57,7 @@ pygments = "2.17.2"
 python-dateutil = "3.0.0"
 pytz = "2024.1"
 # Windows-only baseline dependency
-pywin32 = { version = "^306", markers = "sys_platform == 'win32'" }
+pywin32 = { version = "^312", markers = "sys_platform == 'win32'" }
 pywin32-ctypes = "0.2.3"
 pyyaml = "6.0.3"
 requests = "2.32.4"
