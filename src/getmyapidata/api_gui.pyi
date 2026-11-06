@@ -2,10 +2,7 @@ import logging
 from collections.abc import Callable
 
 import wx
-
-from src.getmyapidata.aou_package import AouPackage
-from src.getmyapidata.gcloud_tools import GCloudTools
-from src.getmyapidata.insite_api import InSiteAPI
+from insiteapi import AouPackage, GCloudTools, InSiteAPI
 
 class ApiGui(wx.Dialog):
     __aou_account_text_ctrl: wx.TextCtrl = None

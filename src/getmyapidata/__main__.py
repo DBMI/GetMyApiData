@@ -8,9 +8,9 @@ import os
 from tkinter import messagebox
 
 import wx.adv
+from insiteapi import get_logging_directory, resource_path
 
 from src.getmyapidata.api_gui import ApiGui
-from src.getmyapidata.common import get_logging_directory, resource_path
 from src.getmyapidata.my_logging import setup_logging
 from src.getmyapidata.splash import MySplashScreen
 

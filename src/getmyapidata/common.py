@@ -2,12 +2,10 @@
 Collection of static utility methods.
 """
 
-import errno
 import logging
 import os
 import re
 import sys
-import tempfile
 from importlib import resources
 from pathlib import Path
 
@@ -28,42 +26,6 @@ if sys.platform == "win32":
 else:
     # Fallback or Mock object for Linux test environments
     win32api = None
-
-
-def ensure_path_possible(filename: str, log: logging.Logger) -> bool:
-    """
-    Tests to ensure the filename provided can actually be created.
-
-    Parameters
-    ----------
-    filename: str           File we propose to create
-    log: logging.Logger     To assist in debugging
-
-    Returns
-    -------
-    bool
-    """
-    log.debug(f"Checking path '{filename}' exists.")
-    directory_name: str = os.path.dirname(filename)
-    log.debug(f"Checking directory '{directory_name}' exists.")
-    directory_path = Path(directory_name)
-
-    # Does this directory already exist?
-    if os.path.exists(directory_path):
-        return True
-
-    try:
-        directory_path.mkdir(parents=True, exist_ok=True)
-        log.debug(f"Directory '{directory_name}' created.")
-
-        # OK, we CAN create it, so now delete it.
-        # (Helps when we're calling this method with every new
-        os.rmdir(directory_name)
-        return True
-    except OSError as e:
-        log.debug(f"Error ensuring directory '{directory_name} because: {e}")
-        print(f"Error ensuring directory '{directory_name}': {e}")
-        return False
 
 
 def find_time_or_date_columns(df: pandas.DataFrame) -> list[str]:
@@ -161,67 +123,6 @@ def get_exe_version(log: logging.Logger) -> str:
 
         print(f"Error getting version for {exe_path!s}: {e}")  # pragma: no cover
         return ""  # pragma: no cover
-
-
-def get_logging_directory(suggested_dir: str) -> str | None:
-    """
-    If suggested directory is writable, use that. Otherwise, return system temp directory (or None).
-
-    Parameters
-    ----------
-    suggested_dir: str
-
-    Returns
-    -------
-    str | None
-    """
-    if is_writable(path_to_test=suggested_dir):
-        return suggested_dir
-
-    return get_temp_directory()
-
-
-# https://stackoverflow.com/a/847866/20241849
-def get_temp_directory() -> str | None:
-    """
-    Uses tempfile's capability to find system's temp directory. Tries "C:\tmp" as backup.
-
-    Returns
-    -------
-    temp_directory : str | None
-    """
-    temp_directory: str = tempfile.gettempdir()
-
-    if is_writable(path_to_test=temp_directory):
-        return temp_directory
-    else:
-        if is_writable(path_to_test="C:\tmp"):
-            return "C:\tmp"
-        else:
-            return None
-
-
-# https://stackoverflow.com/a/25868839/20241849
-def is_writable(path_to_test: str) -> bool:
-    """
-    Tests path to see if it is writable.
-
-    Parameters
-    ----------
-    path_to_test : str
-
-    Returns
-    -------
-    success : bool
-    """
-    try:
-        with tempfile.TemporaryFile(dir=path_to_test) as testfile:
-            testfile.close()
-    except OSError as e:
-        if e.errno == errno.EACCES:  # 13
-            return False
-        e.filename = path_to_test
-    return True
 
 
 def parse_version_file() -> str:
