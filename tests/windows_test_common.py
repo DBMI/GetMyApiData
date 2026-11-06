@@ -7,8 +7,9 @@ import os
 import sys
 from pathlib import Path
 
+from insiteapi import ensure_path_possible
+
 from src.getmyapidata.common import (
-    ensure_path_possible,
     get_exe_version,
 )
 
