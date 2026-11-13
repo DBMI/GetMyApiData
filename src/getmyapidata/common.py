@@ -66,7 +66,9 @@ def resolve_path(file_name: str) -> str:
         return os.path.join(sys._MEIPASS, "config", file_name)
 
     # Standard development path
-    config_file: str = str(resources.files("src.getmyapidata.config").joinpath(file_name))
+    config_file: str = str(
+        resources.files("src.getmyapidata.config").joinpath(file_name)
+    )
     return config_file
 
 
