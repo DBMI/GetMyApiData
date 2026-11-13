@@ -11,7 +11,6 @@ from collections.abc import Callable
 import numpy as np
 import pandas
 import yaml
-
 from common import (
     find_time_or_date_columns,
     resolve_path,
