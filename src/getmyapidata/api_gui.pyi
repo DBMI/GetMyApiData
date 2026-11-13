@@ -2,14 +2,13 @@ import logging
 from collections.abc import Callable
 
 import wx
-from insiteapi import AouPackage, GCloudTools, InSiteAPI
+from insiteapi import AouPackage, InSiteAPI
 
 class ApiGui(wx.Dialog):
     __aou_account_text_ctrl: wx.TextCtrl = None
     __aou_package: AouPackage = None
     __api_mgr: InSiteAPI = None
     __awardee_text_ctrl: wx.TextCtrl = None
-    __gcloud_mgr: GCloudTools = None
     __is_cancelled: bool = False
     __log: logging.Logger = None
     __my_grid: wx.GridBagSizer = None
@@ -43,7 +42,6 @@ class ApiGui(wx.Dialog):
     def __get_data(self) -> None: ...
     def __get_destination_directory(self) -> str: ...
     def __on_aou_service_account_text_changed(self, event: wx.EVT_TEXT) -> None: ...
-    def __on_auth_completion(self) -> None: ...
     def __on_awardee_text_changed(self, event: wx.EVT_TEXT) -> None: ...
     def __on_cancel_clicked(self, event: wx.EVT_BUTTON) -> None: ...
     def __on_close(self) -> None: ...
