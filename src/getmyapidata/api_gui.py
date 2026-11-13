@@ -13,8 +13,8 @@ import wx
 import wx.adv
 from insiteapi import AouPackage, GCloudTools, InSiteAPI, gcloud_tools_installed
 
-from src.getmyapidata.common import get_exe_version
-from src.getmyapidata.convert_to_hp_format import HealthProConverter
+from common import get_exe_version
+from convert_to_hp_format import HealthProConverter
 
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes

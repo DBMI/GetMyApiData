@@ -12,11 +12,11 @@ import numpy as np
 import pandas
 import yaml
 
-from src.getmyapidata.common import (
+from common import (
     find_time_or_date_columns,
     resolve_path,
 )
-from src.getmyapidata.my_logging import setup_logging
+from my_logging import setup_logging
 
 
 # UTILITY CLASS
