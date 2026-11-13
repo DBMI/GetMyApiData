@@ -5,15 +5,15 @@ Module: Contains class ApiGui, which creates the GUI
 
 import logging
 import os
-from collections import namedtuple
 from collections.abc import Callable
 from tkinter import filedialog
+from typing import cast
 
 import wx
 import wx.adv
 from common import get_exe_version
 from convert_to_hp_format import HealthProConverter
-from insiteapi import AouPackage, GCloudTools, InSiteAPI, gcloud_tools_installed
+from insiteapi import AouPackage, InSiteAPI, gcloud_tools_installed
 
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
@@ -32,7 +32,7 @@ class ApiGui(wx.Dialog):
 
     def __init__(self, log: logging.Logger) -> None:
         """
-        Initialise the ApiGui class.
+        Initialize the ApiGui class.
         """
         self.__log: logging.Logger = log
 
@@ -52,8 +52,7 @@ class ApiGui(wx.Dialog):
 
         # Variables we need for data request.
         self.__aou_package: AouPackage = AouPackage(self.__log)
-        self.__gcloud_mgr: GCloudTools
-        self.__api_mgr: InSiteAPI = None
+        self.__api_mgr: InSiteAPI
         self.__is_cancelled: bool = False
 
         sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
@@ -304,21 +303,6 @@ class ApiGui(wx.Dialog):
         )
         self.__my_grid.AddGrowableCol(idx=1, proportion=1)
 
-    def __auth_report(self, progress: bool | int | str) -> None:
-        """
-        Allow external method to either change status bar, gauge or report completion.
-
-        Parameters
-        ----------
-        progress: Union[bool, int, str]
-        """
-        if isinstance(progress, bool):
-            self.__on_auth_completion()
-        elif isinstance(progress, int):
-            wx.CallAfter(self.__set_gauge, int(progress))
-        elif isinstance(progress, str):
-            wx.CallAfter(self.__set_status_bar, str(progress))
-
     def __data_report(self, progress: bool | int | str) -> None:
         """
         Allow external method to either change status bar, gauge or report completion.
@@ -349,21 +333,26 @@ class ApiGui(wx.Dialog):
 
     def __get_data(self) -> None:
         """
-        Creates a GCloudTool and InSiteAPI objects & uses them to authenticate and request data.
+        Creates an InSiteAPI object & uses it to authenticate and request data.
 
         Returns
         -------
         None
         """
-        self.__set_status_bar("Calling GCloudTools...")
-        self.__gcloud_mgr: GCloudTools = GCloudTools(
+        self.__set_status_bar("Calling InSiteAPI...")
+        self.__api_mgr: InSiteAPI = InSiteAPI(
             aou_package=self.__aou_package,
             log=self.__log,
-            status_fn=self.__auth_report,
+            report_fn=self.__data_report,
         )
 
-        # Kick off thread, which will call our __on_auth_completion() method once thread is done.
-        self.__gcloud_mgr.start()
+        self.__cancel_button.Enable()
+
+        # Kick off thread, which will call our __on_data_completion() method once thread is done.
+        # (Note: InSiteAPI class does NOT have a start() method. But it inherits from threading.thread,
+        # which DOES have a start() method. And calling the thread's start() method
+        # invokes the subclass' run() method.
+        self.__api_mgr.start()
 
     def __get_destination_directory(self) -> str:
         """
@@ -391,7 +380,7 @@ class ApiGui(wx.Dialog):
 
         return directory_path
 
-    def __on_aou_service_account_text_changed(self, event: wx.EVT_TEXT) -> None:
+    def __on_aou_service_account_text_changed(self, event: wx.CommandEvent) -> None:
         """
         Event handler for when user changes this text control:
             1) Updates the property
@@ -406,70 +395,48 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
-        restore_button.Enable()
+        obj: wx.Object = event.GetEventObject()
 
-        # Get and test the new value.
-        new_aou_svc_acct: str = text_ctrl_source.GetValue()
+        if isinstance(obj, wx.TextCtrl):
+            text_ctrl_source: wx.TextCtrl = obj
+            restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+            restore_button.Enable()
 
-        if "@all-of-us" in new_aou_svc_acct:
-            text_ctrl_source.SetBackgroundColour(wx.WHITE)
-            self.__aou_package.aou_service_account = new_aou_svc_acct
+            # Get and test the new value.
+            new_aou_svc_acct: str = text_ctrl_source.GetValue()
+
+            if "@all-of-us" in new_aou_svc_acct:
+                text_ctrl_source.SetBackgroundColour(wx.WHITE)
+                self.__aou_package.aou_service_account = new_aou_svc_acct
+                self.__enable_if_inputs_complete()
+            else:
+                text_ctrl_source.SetBackgroundColour(wx.YELLOW)
+
+    def __on_awardee_text_changed(self, event: wx.CommandEvent) -> None:
+        """
+        Event handler for when user changes this text control:
+            1) Updates the property
+            2) Enables the Restore button
+            3) Enables the Request Data button if all inputs now OK
+
+        Parameters
+        ----------
+        event : wx.EVT_TEXT
+
+        Returns
+        -------
+        None
+        """
+        obj: wx.Object = event.GetEventObject()
+
+        if isinstance(obj, wx.TextCtrl):
+            text_ctrl_source: wx.TextCtrl = obj
+            self.__aou_package.awardee = text_ctrl_source.GetValue()
+            restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
+            restore_button.Enable()
             self.__enable_if_inputs_complete()
-        else:
-            text_ctrl_source.SetBackgroundColour(wx.YELLOW)
 
-    def __on_auth_completion(self) -> None:
-        """
-        Event handler for when GCloud thread completes.
-        """
-
-        self.__set_status_bar("Requesting token...")
-        token: str = self.__gcloud_mgr.get_token()
-
-        # Fold token, aou_package into a named tuple.
-        ApiRequestPackage = namedtuple("ApiRequestPackage", ["aou_package", "token"])
-
-        # Get data from InSiteAPI.
-        self.__set_status_bar("Instantiating InSiteAPI object...")
-        self.__api_mgr = InSiteAPI(
-            api_package=ApiRequestPackage(self.__aou_package, token),
-            log=self.__log,
-            report_fn=self.__data_report,
-        )
-        self.__set_status_bar("Requesting InSiteAPI data...")
-        self.__cancel_button.Enable()
-
-        # Kick off thread, which will call our __on_data_completion() method once thread is done.
-        # (Note: InSiteAPI class does NOT have a start() method. But it inherits from threading.thread,
-        # which DOES have a start() method. And calling the thread's start() method
-        # invokes the subclass' run() method.
-        self.__api_mgr.start()
-
-    def __on_awardee_text_changed(self, event: wx.EVT_TEXT) -> None:
-        """
-        Event handler for when user changes this text control:
-            1) Updates the property
-            2) Enables the Restore button
-            3) Enables the Request Data button if all inputs now OK
-
-        Parameters
-        ----------
-        event : wx.EVT_TEXT
-
-        Returns
-        -------
-        None
-        """
-
-        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        self.__aou_package.awardee = text_ctrl_source.GetValue()
-        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
-        restore_button.Enable()
-        self.__enable_if_inputs_complete()
-
-    def __on_cancel_clicked(self, event: wx.EVT_BUTTON) -> None:
+    def __on_cancel_clicked(self, event: wx.CommandEvent) -> None:
         """
         Event handler for when user cancels Cancel button:
 
@@ -492,7 +459,7 @@ class ApiGui(wx.Dialog):
         self.__enable_if_inputs_complete()
         event.Skip()
 
-    def __on_close(self, event: wx.EVT_CLOSE) -> None:
+    def __on_close(self, event: wx.CommandEvent) -> None:
         """
         Ensure external thread is stopped before GUI closes.
         """
@@ -577,7 +544,7 @@ class ApiGui(wx.Dialog):
         elif "DEBUG" in event_label:
             self.__log.setLevel(logging.DEBUG)
 
-    def __on_pmi_account_text_changed(self, event: wx.EVT_TEXT) -> None:
+    def __on_pmi_account_text_changed(self, event: wx.CommandEvent) -> None:
         """
         Event handler for when user changes this text control:
             1) Updates the property
@@ -592,23 +559,28 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
-        restore_button.Enable()
+        obj: wx.Object = event.GetEventObject()
 
-        # Get and test the new value.
-        new_pmi_acct: str = text_ctrl_source.GetValue()
-
-        if new_pmi_acct.endswith("@pmi-ops.org"):
-            text_ctrl_source.SetBackgroundColour(wx.WHITE)
-            self.__aou_package.pmi_account = new_pmi_acct
+        if isinstance(obj, wx.TextCtrl):
+            text_ctrl_source: wx.TextCtrl = obj
             restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
             restore_button.Enable()
-            self.__enable_if_inputs_complete()
-        else:
-            text_ctrl_source.SetBackgroundColour(wx.YELLOW)
 
-    def __on_project_text_changed(self, event: wx.EVT_TEXT) -> None:
+            # Get and test the new value.
+            new_pmi_acct: str = text_ctrl_source.GetValue()
+
+            if new_pmi_acct.endswith("@pmi-ops.org"):
+                text_ctrl_source.SetBackgroundColour(wx.WHITE)
+                self.__aou_package.pmi_account = new_pmi_acct
+                restore_button: wx.Button = self.__text_boxes_and_buttons[
+                    text_ctrl_source
+                ]
+                restore_button.Enable()
+                self.__enable_if_inputs_complete()
+            else:
+                text_ctrl_source.SetBackgroundColour(wx.YELLOW)
+
+    def __on_project_text_changed(self, event: wx.CommandEvent) -> None:
         """
         Event handler for when user changes this text control:
             1) Updates the property
@@ -623,7 +595,7 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
+        text_ctrl_source: wx.TextCtrl = cast(wx.TextCtrl, event.GetEventObject())
         restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
         restore_button.Enable()
 
@@ -640,7 +612,7 @@ class ApiGui(wx.Dialog):
             text_ctrl_source.SetBackgroundColour(wx.YELLOW)
 
     def __on_restore_aou_service_account_button_clicked(
-        self, event: wx.EVT_BUTTON
+        self, event: wx.CommandEvent
     ) -> None:
         """
         Restore button handler
@@ -653,12 +625,15 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        button: wx.Button = event.GetEventObject()
-        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
-        text_ctrl.SetValue(self.__aou_package.restore_aou_service_account())
-        button.Disable()
+        obj: wx.Object = event.GetEventObject()
 
-    def __on_restore_awardee_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        if isinstance(obj, wx.Button):
+            button: wx.Button = obj
+            text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+            text_ctrl.SetValue(self.__aou_package.restore_aou_service_account())
+            button.Disable()
+
+    def __on_restore_awardee_button_clicked(self, event: wx.CommandEvent) -> None:
         """
         Restore button handler
 
@@ -670,12 +645,15 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        button: wx.Button = event.GetEventObject()
-        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
-        text_ctrl.SetValue(self.__aou_package.restore_awardee())
-        button.Disable()
+        obj: wx.Object = event.GetEventObject()
 
-    def __on_restore_pmi_account_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        if isinstance(obj, wx.Button):
+            button: wx.Button = obj
+            text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+            text_ctrl.SetValue(self.__aou_package.restore_awardee())
+            button.Disable()
+
+    def __on_restore_pmi_account_button_clicked(self, event: wx.CommandEvent) -> None:
         """
         Restore button handler
 
@@ -687,12 +665,15 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        button: wx.Button = event.GetEventObject()
-        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
-        text_ctrl.SetValue(self.__aou_package.restore_pmi_account())
-        button.Disable()
+        obj: wx.Object = event.GetEventObject()
 
-    def __on_restore_project_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        if isinstance(obj, wx.Button):
+            button: wx.Button = obj
+            text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+            text_ctrl.SetValue(self.__aou_package.restore_pmi_account())
+            button.Disable()
+
+    def __on_restore_project_button_clicked(self, event: wx.CommandEvent) -> None:
         """
         Restore button handler
 
@@ -704,12 +685,15 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        button: wx.Button = event.GetEventObject()
-        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
-        text_ctrl.SetValue(self.__aou_package.restore_project())
-        button.Disable()
+        obj: wx.Object = event.GetEventObject()
 
-    def __on_restore_endpoint_button_clicked(self, event: wx.EVT_BUTTON) -> None:
+        if isinstance(obj, wx.Button):
+            button: wx.Button = obj
+            text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+            text_ctrl.SetValue(self.__aou_package.restore_project())
+            button.Disable()
+
+    def __on_restore_endpoint_button_clicked(self, event: wx.CommandEvent) -> None:
         """
         Restore button handler
 
@@ -721,10 +705,13 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        button: wx.Button = event.GetEventObject()
-        text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
-        text_ctrl.SetValue(self.__aou_package.restore_endpoint())
-        button.Disable()
+        obj: wx.Object = event.GetEventObject()
+
+        if isinstance(obj, wx.Button):
+            button: wx.Button = obj
+            text_ctrl: wx.TextCtrl = self.__buttons_and_text_boxes[button]
+            text_ctrl.SetValue(self.__aou_package.restore_endpoint())
+            button.Disable()
 
     def __on_show_menu(self, event: wx.EVT_MENU) -> None:
         """
@@ -746,7 +733,7 @@ class ApiGui(wx.Dialog):
         self.PopupMenu(menu, event.GetPosition())
         menu.Destroy()
 
-    def __on_endpoint_text_changed(self, event: wx.EVT_TEXT) -> None:
+    def __on_endpoint_text_changed(self, event: wx.CommandEvent) -> None:
         """
         Event handler for when user changes this text control:
             1) Updates the property
@@ -761,21 +748,26 @@ class ApiGui(wx.Dialog):
         -------
         None
         """
-        text_ctrl_source: wx.TextCtrl = event.GetEventObject()
-        restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
-        restore_button.Enable()
+        obj: wx.Object = event.GetEventObject()
 
-        # Get and test the new value.
-        new_endpoint: str = text_ctrl_source.GetValue()
-
-        if new_endpoint.startswith("https://"):
-            text_ctrl_source.SetBackgroundColour(wx.WHITE)
-            self.__aou_package.endpoint = text_ctrl_source.GetValue()
+        if isinstance(obj, wx.TextCtrl):
+            text_ctrl_source: wx.TextCtrl = obj
             restore_button: wx.Button = self.__text_boxes_and_buttons[text_ctrl_source]
             restore_button.Enable()
-            self.__enable_if_inputs_complete()
-        else:
-            text_ctrl_source.SetBackgroundColour(wx.YELLOW)
+
+            # Get and test the new value.
+            new_endpoint: str = text_ctrl_source.GetValue()
+
+            if new_endpoint.startswith("https://"):
+                text_ctrl_source.SetBackgroundColour(wx.WHITE)
+                self.__aou_package.endpoint = text_ctrl_source.GetValue()
+                restore_button: wx.Button = self.__text_boxes_and_buttons[
+                    text_ctrl_source
+                ]
+                restore_button.Enable()
+                self.__enable_if_inputs_complete()
+            else:
+                text_ctrl_source.SetBackgroundColour(wx.YELLOW)
 
     def __set_gauge(self, pct: int) -> None:
         """
